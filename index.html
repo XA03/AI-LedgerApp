@@ -295,6 +295,26 @@ function status(t){$("syncStatus").textContent=t}
 const syncOn=()=>!!sync&&sync.on!==false;   // 已設定且開關為開
 // 已設定但關閉時，變更仍先排進佇列，重新開啟後一併送出；不會發出任何連線
 function enqueue(op){if(!sync)return;queue.push(op);lset("ledger.queue",queue);if(syncOn())flush()}
+// 解析後端回應；不是 JSON 時（通常是 Apps Script 出錯的 Google 錯誤頁）把頁面文字帶進錯誤訊息，方便找原因
+async function readJson(r,what="寫入"){
+  const t=await r.text();
+  try{return JSON.parse(t)}catch{
+    const e=new Error(what+"時伺服器回傳的不是 JSON：「"+t.replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,160)+"」");
+    e.notJson=true;throw e;
+  }
+}
+// Google 偶爾在腳本還沒執行前就回暫時性的錯誤頁或斷線（Apps Script 執行紀錄看不到失敗），
+// 所以自動重試最多 3 次。寫入指令都是冪等的（依 id／key 覆蓋或刪除），重送是安全的。
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function api(url,opt,what){
+  for(let i=1;;i++){
+    try{return await readJson(await fetch(url,opt),what)}
+    catch(e){
+      if(!(e.notJson||e instanceof TypeError)||i>=3)throw e;   // 只重試「回的不是 JSON」與連線錯誤；密碼錯誤等不重試
+      await sleep(700*i);
+    }
+  }
+}
 async function flush(){
   if(!syncOn())return;
   if(busy){again=true;return}
@@ -302,12 +322,12 @@ async function flush(){
   try{
     if(queue.length){
       const ops=queue.slice();
-      const r=await fetch(sync.url,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({token:sync.token,ops})});
-      const j=await r.json();if(!j.ok)throw new Error(j.error);
+      const j=await api(sync.url,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({token:sync.token,ops})},"寫入");
+      if(!j.ok)throw new Error(j.error);
       queue=queue.slice(ops.length);lset("ledger.queue",queue);
     }
-    const r=await fetch(sync.url+"?token="+encodeURIComponent(sync.token));
-    const j=await r.json();if(!j.ok)throw new Error(j.error);
+    const j=await api(sync.url+"?token="+encodeURIComponent(sync.token),undefined,"讀取");
+    if(!j.ok)throw new Error(j.error);
     if(!queue.length){
       data=j.rows;save();
       if(Array.isArray(j.cfg)){   // 舊版後端沒有 cfg 就略過
@@ -325,7 +345,7 @@ async function flush(){
     status("☁️ 已同步 "+new Date().toLocaleTimeString());
   }catch(e){
     const why=e.message==="token"?"密碼錯誤"
-      :e instanceof SyntaxError?"伺服器回傳的不是 JSON：多半是存取權限不是「所有人」、網址不是 /exec，或 Apps Script 執行出錯"
+      :e.notJson?e.message
       :/fetch|network/i.test(e.message)?"連不上：網路中斷，或存取權限不是「所有人」"
       :e.message;
     status("☁️ 同步失敗："+why+"（下次操作時會重試）");
