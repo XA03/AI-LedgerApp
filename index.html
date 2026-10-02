@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2f7d6d">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>簡易記帳</title>
+<style>
+:root{--bg:#f4f6f5;--card:#fff;--text:#1d2a27;--sub:#6b7b77;--line:#e3e8e6;--main:#2f7d6d;--exp:#d9534f;--inc:#2f7d6d}
+@media (prefers-color-scheme:dark){:root{--bg:#121816;--card:#1c2522;--text:#e8efed;--sub:#8fa19c;--line:#2a3532;--main:#4fb5a1;--exp:#ef7b77;--inc:#4fb5a1}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.4 system-ui,"Microsoft JhengHei",sans-serif;padding-bottom:90px}
+main{max-width:640px;margin:0 auto;padding:0 16px}
+header{display:flex;align-items:center;justify-content:space-between;padding:16px 0 8px}
+header h1{font-size:20px;margin:0}
+.month{display:flex;align-items:center;gap:8px}
+button{font:inherit;color:inherit;cursor:pointer}
+.ic{background:var(--card);border:1px solid var(--line);border-radius:8px;width:34px;height:34px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:10px 0}
+.sum{display:grid;grid-template-columns:repeat(3,1fr);text-align:center}
+.sum small{color:var(--sub);display:block}
+.sum b{font-size:18px}
+.exp{color:var(--exp)}.inc{color:var(--inc)}
+.cat{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:14px}
+.cat .bar{flex:1;height:8px;background:var(--line);border-radius:4px;overflow:hidden}
+.cat .bar i{display:block;height:100%;background:var(--main)}
+.cat span:first-child{width:64px}.cat span:last-child{width:70px;text-align:right}
+.day{color:var(--sub);font-size:13px;margin:16px 4px 4px;display:flex;justify-content:space-between}
+.item{padding:12px 14px 8px;background:var(--card);border:1px solid var(--line);border-radius:12px;margin:6px 0}
+.item .top{display:flex;align-items:center;gap:12px}
+.act{display:flex;justify-content:flex-end;gap:8px;margin-top:8px;border-top:1px solid var(--line);padding-top:6px}
+.act button{border:0;background:none;color:var(--sub);font-size:13px;padding:4px 8px}
+.act button.d{color:var(--exp)}
+#pager{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px;margin:14px 0 0}
+#pager button{min-width:36px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card)}
+#pager button.on{background:var(--main);color:#fff;border-color:var(--main)}
+#pager button:disabled{opacity:.4}
+#pager small{flex-basis:100%;text-align:center;color:var(--sub)}
+.item .m{flex:1;min-width:0}
+.item .m small{color:var(--sub);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.empty{text-align:center;color:var(--sub);padding:30px 0}
+#fab{position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom));width:58px;height:58px;border-radius:50%;border:0;background:var(--main);color:#fff;font-size:32px;box-shadow:0 4px 14px #0004}
+dialog{border:0;border-radius:16px;background:var(--card);color:var(--text);width:min(92vw,420px);padding:18px}
+dialog::backdrop{background:#0006}
+label{display:block;font-size:13px;color:var(--sub);margin:10px 0 4px}
+input,select{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);font:inherit}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{flex:1;min-width:64px;padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.seg button.cu,.cats button.cu{border-color:var(--exp);color:var(--exp)}
+.seg button.ro,.cats button.ro{opacity:.4}
+.syncrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px;font-size:13px;color:var(--sub)}
+.syncrow label{display:flex;align-items:center;gap:6px;margin:0;color:var(--text);font-size:14px}
+.syncrow input{width:18px;height:18px;padding:0}
+.mbtn{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-weight:700}
+.mbtn:disabled{opacity:.6}
+.pkyear{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:12px}
+.pkyear input{width:96px;text-align:center;font-weight:700}
+.pkgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pkgrid button{padding:14px 0;border:1px solid var(--line);border-radius:10px;background:var(--bg);position:relative}
+.pkgrid button.on{background:var(--main);color:#fff;border-color:var(--main)}
+.pkgrid button.has::after{content:"";position:absolute;top:6px;right:8px;width:6px;height:6px;border-radius:50%;background:var(--main)}
+.pkgrid button.on.has::after{background:#fff}
+.addbox{display:flex;gap:6px;margin-top:8px}
+.addbox[hidden]{display:none}
+.addbox input{flex:1;min-width:0}
+.addbox button{padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+#tyAdd,#caAdd{background:var(--main);color:#fff;border-color:var(--main)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.chips span{padding:5px 10px;border:1px solid var(--line);border-radius:999px;background:var(--bg);font-size:14px}
+.chips span.cu{border-color:var(--main)}
+.chips button{border:0;background:none;color:var(--exp);padding:0 0 0 4px;font-size:13px}
+.lnk{background:none;border:0;color:var(--sub);font-size:13px;padding:0 0 8px}
+.seg button.on{background:var(--main);color:#fff;border-color:var(--main)}
+.cats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.cats button{padding:8px 0;border:1px solid var(--line);border-radius:8px;background:var(--bg);font-size:12px}
+.cats button.on{border-color:var(--main);outline:2px solid var(--main)}
+.row{display:flex;gap:8px;margin-top:16px}
+.row button{flex:1;padding:11px;border-radius:10px;border:1px solid var(--line);background:var(--bg)}
+.row .pri{background:var(--main);color:#fff;border-color:var(--main)}
+.row .del{color:var(--exp)}
+.fbar{display:flex;gap:8px;align-items:center}
+.fbar input{flex:1}
+.fbar button{padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);white-space:nowrap}
+.fbar button.on{background:var(--main);color:#fff;border-color:var(--main)}
+#fpanel{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+#fpanel[hidden]{display:none}
+#fpanel label{margin:0 0 2px}
+#fpanel .full{grid-column:1/-1}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:24px}
+.tools button{padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);font-size:13px}
+#rp{position:fixed;inset:0;z-index:50;overflow:auto;background:var(--bg);padding:12px 16px 40px}
+#rp[hidden]{display:none}
+.rpbar{display:flex;gap:8px;max-width:760px;margin:0 auto 12px}
+.rpbar button{padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+.rpbar .pri{background:var(--main);color:#fff;border-color:var(--main)}
+#rpBody{max-width:760px;margin:0 auto}
+#rpBody h2{margin:6px 0 12px}
+#rpBody h3{margin:20px 0 6px;font-size:16px}
+.rsum{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.rsum div{border:1px solid var(--line);border-radius:10px;padding:8px;text-align:center;background:var(--card)}
+.rsum small{display:block;color:var(--sub)}
+#rpBody table{width:100%;border-collapse:collapse;font-size:14px}
+#rpBody th,#rpBody td{padding:5px 6px;border-bottom:1px solid var(--line);text-align:left}
+#rpBody .n{text-align:right;white-space:nowrap}
+.rb{height:8px;background:var(--line);border-radius:4px;overflow:hidden;min-width:60px}
+.rb i{display:block;height:100%;background:var(--main)}
+.rb,.rb i{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+@media print{
+  :root{--bg:#fff;--card:#fff;--text:#000;--sub:#555;--line:#ccc;--exp:#c0392b;--inc:#1e7a5f;--main:#2f7d6d}
+  main,#fab,dialog,.noprint{display:none!important}
+  body{padding:0;background:#fff}
+  #rp{position:static;overflow:visible;padding:0}
+  #rpBody tr{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>💰 簡易記帳</h1>
+    <div class="month">
+      <button class="ic" id="prev">‹</button><button type="button" class="mbtn" id="mlabel" title="選擇年份與月份"></button><button class="ic" id="next">›</button>
+    </div>
+  </header>
+  <div class="card sum">
+    <div><small>收入</small><b class="inc" id="sInc">0</b></div>
+    <div><small>支出</small><b class="exp" id="sExp">0</b></div>
+    <div><small>結餘</small><b id="sBal">0</b></div>
+  </div>
+  <div class="card">
+    <div class="fbar">
+      <input id="fq" type="search" placeholder="搜尋名稱、備註、分類">
+      <button id="fToggle">🔍 篩選</button>
+    </div>
+    <div id="fpanel" hidden>
+      <div><label>類型</label><select id="fType"><option value="">全部</option></select></div>
+      <div><label>分類</label><select id="fCat"><option value="">全部</option></select></div>
+      <div><label>起始日期</label><input id="fFrom" type="date"></div>
+      <div><label>結束日期</label><input id="fTo" type="date"></div>
+      <div><label>最低金額</label><input id="fMin" type="number" inputmode="decimal" min="0" step="any"></div>
+      <div><label>最高金額</label><input id="fMax" type="number" inputmode="decimal" min="0" step="any"></div>
+      <div class="full row" style="margin-top:4px"><button type="button" id="fClear">清除篩選</button></div>
+    </div>
+  </div>
+  <div class="card" id="breakdown"></div>
+  <div id="list"></div>
+  <div id="pager"></div>
+  <div class="tools">
+    <button id="exCsv">匯出 CSV</button>
+    <button id="exJson">備份 JSON</button>
+    <button id="imJson">還原 JSON</button>
+    <input type="file" id="file" accept=".json" hidden>
+    <button id="rpBtn">📄 當月報表</button>
+    <button id="mgBtn">🏷 管理類型與分類</button>
+    <button id="syncBtn">☁️ 雲端同步設定</button>
+    <button id="clearBtn" style="color:var(--exp)">🗑 清除本地資料</button>
+  </div>
+  <div class="syncrow"><label><input type="checkbox" id="syncSw"> ☁️ 雲端同步</label><span id="syncStatus"></span></div>
+</main>
+<button id="fab" aria-label="新增">+</button>
+
+<div id="rp" hidden>
+  <div class="rpbar noprint"><button class="pri" id="rpPrint">🖨 列印／存成 PDF</button><button id="rpSheet">📊 建立試算表月表</button><button id="rpClose">關閉</button></div>
+  <div id="rpBody"></div>
+</div>
+
+<dialog id="dlg">
+  <form method="dialog" id="form">
+    <div class="seg" id="typeSeg"></div>
+    <label>帳目名稱</label><input id="nm" type="text" maxlength="40" placeholder="例如：午餐便當">
+    <label>金額</label><input id="amt" type="number" inputmode="decimal" min="0" step="any" required>
+    <label>分類</label><div class="cats" id="cats"></div>
+    <label>日期</label><input id="date" type="date" required>
+    <label>備註</label><input id="note" type="text" maxlength="60">
+    <div class="row">
+      <button type="button" class="del" id="del" hidden>刪除</button>
+      <button type="button" id="cancel">取消</button>
+      <button type="submit" class="pri">儲存</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="pkDlg">
+  <div class="pkyear">
+    <button type="button" class="ic" id="pkPrev">‹</button>
+    <input id="pkYearIn" type="number" inputmode="numeric" min="1970" max="2200" aria-label="年份">
+    <button type="button" class="ic" id="pkNext">›</button>
+  </div>
+  <div class="pkgrid" id="pkGrid"></div>
+  <div class="row"><button type="button" id="pkToday">回到本月</button><button type="button" id="pkClose">取消</button></div>
+</dialog>
+
+<dialog id="askDlg">
+  <p id="askMsg" style="white-space:pre-line;margin:0 0 4px"></p>
+  <div class="row"><button type="button" id="askNo">取消</button><button type="button" class="pri" id="askOk">確定</button></div>
+</dialog>
+
+<dialog id="mgDlg">
+  <b>管理類型與分類</b>
+  <label>類型（括號內為收支方向）</label>
+  <div class="chips" id="mgTypes"></div>
+  <div class="addbox">
+    <input id="tyName" type="text" maxlength="20" placeholder="新類型名稱，例如：儲蓄">
+    <select id="tySign" style="width:auto"><option value="-1">算支出</option><option value="1">算收入</option></select>
+    <button type="button" id="tyAdd">新增</button>
+  </div>
+  <label>分類（先選類型）</label>
+  <select id="mgType"></select>
+  <div class="chips" id="mgCats"></div>
+  <div class="addbox">
+    <input id="caName" type="text" maxlength="20" placeholder="新分類名稱，例如：餐飲">
+    <button type="button" id="caAdd">新增</button>
+  </div>
+  <p style="font-size:12px;color:var(--sub)">只有自訂項目有 ✕ 可刪除；已有帳目使用的項目不能刪。</p>
+  <div class="row"><button type="button" class="pri" id="mgClose">完成</button></div>
+</dialog>
+
+<dialog id="syncDlg">
+  <form method="dialog" id="syncForm">
+    <b>Google 試算表同步</b>
+    <label>Apps Script 網頁應用程式網址</label><input id="syUrl" type="url" placeholder="https://script.google.com/macros/s/.../exec">
+    <label>密碼（TOKEN）</label><input id="syTok" type="password">
+    <p style="font-size:12px;color:var(--sub)">網址與密碼只存在這台裝置。清空網址並儲存即可停用同步。</p>
+    <div class="row"><button type="button" id="syCancel">取消</button><button type="submit" class="pri">儲存並同步</button></div>
+  </form>
+</dialog>
+
+<script>
+const KEY="ledger.v1";
+// 自訂類型／分類（沒有內建分類）：本機存一份，並同步到試算表的「設定」工作表（只同步名稱與收支方向，沒有圖示）
+// 自訂類型 id = 正負號 + 名稱（如 "-儲蓄"），帳目本身也能辨識收支方向
+let cfg=lget("ledger.cfg",{types:[],cats:{}});
+// 設定與雲端「設定」工作表的轉換：每個類型／分類一列
+const cfgKey=i=>i.k==="type"?"t|"+i.id:"c|"+i.type+"|"+i.name;
+const cfgItems=()=>[
+  ...cfg.types.map(t=>({k:"type",id:t.id,name:t.name,sign:t.sign})),
+  ...Object.entries(cfg.cats).flatMap(([type,L])=>L.map(([,name])=>({k:"cat",type,name})))
+];
+function cfgFromItems(items){
+  const c={types:[],cats:{}};
+  items.forEach(i=>{
+    if(i.k==="type")c.types.push({id:i.id,name:i.name,sign:+i.sign});
+    else(c.cats[i.type]=c.cats[i.type]||[]).push(["",i.name]);   // 分類只有文字，圖示欄固定留空
+  });
+  return c;
+}
+const BASE=[{id:"exp",name:"支出",sign:-1},{id:"inc",name:"收入",sign:1}];
+function typeInfo(id){
+  const f=BASE.find(t=>t.id===id)||cfg.types.find(t=>t.id===id);
+  return f||{id,name:/^[+-]/.test(id)?id.slice(1):id,sign:id[0]==="+"?1:-1};
+}
+const signOf=t=>typeInfo(t).sign;
+function allTypes(){
+  const L=[...BASE,...cfg.types];
+  data.forEach(r=>{if(!L.some(t=>t.id===r.type))L.push(typeInfo(r.type))});
+  return L;
+}
+// 自訂分類 + 帳目裡出現過的分類（舊帳目用過的分類仍可辨識）；完全沒有時給「未分類」
+// 分類只有文字：項目格式維持 [圖示, 名稱]，圖示固定留空（相容舊資料）
+function catsOf(t){
+  const L=[...(cfg.cats[t]||[])];
+  data.forEach(r=>{if(r.type===t&&!L.some(x=>x[1]===r.cat))L.push(["",r.cat])});
+  return L.length?L:[["","未分類"]];
+}
+let data=load(), cur=new Date(); cur.setDate(1);
+let edit=null, type="exp", cat="";
+const $=id=>document.getElementById(id);
+
+// 頁面內的確認／提示視窗：取代 confirm()/alert()，避免被瀏覽器或 PWA 擋掉而沒反應
+function ask(msg,o={}){
+  return new Promise(res=>{
+    $("askMsg").textContent=msg;
+    $("askOk").textContent=o.ok||"確定";$("askNo").textContent=o.no||"取消";$("askNo").hidden=!!o.single;
+    const done=v=>{$("askOk").onclick=$("askNo").onclick=$("askDlg").oncancel=null;$("askDlg").close();res(v)};
+    $("askOk").onclick=()=>done(true);
+    $("askNo").onclick=()=>done(false);
+    $("askDlg").oncancel=e=>{e.preventDefault();done(false)};   // 按 Esc 視為取消（用 cancel 事件，避免上一個視窗的 close 事件誤觸下一個）
+    $("askDlg").showModal();
+  });
+}
+const tell=msg=>ask(msg,{ok:"知道了",single:true});
+
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||[]}catch{return[]}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(data))}catch{tell("無法儲存（瀏覽器儲存空間被封鎖）")}}
+
+// ---- Google 試算表同步：本機優先，變更先進佇列，再送出並拉回 ----
+function lget(k,d){try{return JSON.parse(localStorage.getItem(k))||d}catch{return d}}
+function lset(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
+let sync=lget("ledger.sync",null), queue=lget("ledger.queue",[]), busy=false;
+function status(t){$("syncStatus").textContent=t}
+const syncOn=()=>!!sync&&sync.on!==false;   // 已設定且開關為開
+// 已設定但關閉時，變更仍先排進佇列，重新開啟後一併送出；不會發出任何連線
+function enqueue(op){if(!sync)return;queue.push(op);lset("ledger.queue",queue);if(syncOn())flush()}
+async function flush(){
+  if(!syncOn())return;
+  if(busy){again=true;return}
+  busy=true;again=false;status("☁️ 同步中…");
+  try{
+    if(queue.length){
+      const ops=queue.slice();
+      const r=await fetch(sync.url,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({token:sync.token,ops})});
+      const j=await r.json();if(!j.ok)throw new Error(j.error);
+      queue=queue.slice(ops.length);lset("ledger.queue",queue);
+    }
+    const r=await fetch(sync.url+"?token="+encodeURIComponent(sync.token));
+    const j=await r.json();if(!j.ok)throw new Error(j.error);
+    if(!queue.length){
+      data=j.rows;save();
+      if(Array.isArray(j.cfg)){   // 舊版後端沒有 cfg 就略過
+        if(!lget("ledger.cfgSynced",false)){
+          // 第一次與這份試算表同步設定：把本機既有的自訂項目併入並上傳，避免被空的雲端設定蓋掉
+          const have=new Set(j.cfg.map(cfgKey)),extra=cfgItems().filter(i=>!have.has(cfgKey(i)));
+          j.cfg=[...j.cfg,...extra];
+          extra.forEach(item=>queue.push({op:"cset",item}));lset("ledger.queue",queue);
+          lset("ledger.cfgSynced",true);
+        }
+        cfg=cfgFromItems(j.cfg);lset("ledger.cfg",cfg);
+      }
+      render();
+    }
+    status("☁️ 已同步 "+new Date().toLocaleTimeString());
+  }catch(e){
+    const why=e.message==="token"?"密碼錯誤"
+      :e instanceof SyntaxError?"伺服器回傳的不是 JSON：多半是存取權限不是「所有人」、網址不是 /exec，或 Apps Script 執行出錯"
+      :/fetch|network/i.test(e.message)?"連不上：網路中斷，或存取權限不是「所有人」"
+      :e.message;
+    status("☁️ 同步失敗："+why+"（下次操作時會重試）");
+  }
+  busy=false;
+  if(again||queue.length&&!/失敗/.test($("syncStatus").textContent))flush();
+}
+let again=false;
+const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const fmt=n=>Math.round(n*100)/100;
+const esc=s=>s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+// 篩選下拉選單隨類型、分類變動而更新（保留目前選擇）
+function fillFilters(){
+  const types=allTypes(),cats=[...new Set(types.flatMap(t=>catsOf(t.id).map(x=>x[1])))];
+  const sig=JSON.stringify([types.map(t=>t.id),cats]);
+  if(sig===fillFilters.sig)return;
+  fillFilters.sig=sig;
+  const tv=$("fType").value,cv=$("fCat").value;
+  $("fType").innerHTML='<option value="">全部</option>'+types.map(t=>`<option value="${esc(t.id)}">${esc(t.name)}</option>`).join("");
+  $("fCat").innerHTML='<option value="">全部</option>'+cats.map(c=>`<option>${esc(c)}</option>`).join("");
+  $("fType").value=tv;$("fCat").value=cv;
+}
+
+function filt(){
+  const q=$("fq").value.trim().toLowerCase(),t=$("fType").value,c=$("fCat").value,
+        a=$("fFrom").value,b=$("fTo").value,lo=$("fMin").value,hi=$("fMax").value;
+  return {active:!!(q||t||c||a||b||lo||hi),key:[q,t,c,a,b,lo,hi].join("|"),
+    test:r=>(!q||((r.name||"")+" "+(r.note||"")+" "+r.cat).toLowerCase().includes(q))
+      &&(!t||r.type===t)&&(!c||r.cat===c)&&(!a||r.date>=a)&&(!b||r.date<=b)&&(lo===""||r.amount>=+lo)&&(hi===""||r.amount<=+hi)};
+}
+
+const PER=10;           // 每頁筆數
+let page=0,lastKey="";
+function pagerHtml(pages){
+  const btn=(p,t,cls="")=>`<button type="button" data-p="${p}" class="${cls}"${p<0||p>=pages?" disabled":""}>${t}</button>`;
+  const nums=[];
+  for(let i=0;i<pages;i++)if(i===0||i===pages-1||Math.abs(i-page)<=1)nums.push(i);
+  let h=btn(page-1,"‹ 上一頁"),prev=-1;
+  for(const i of nums){if(i-prev>1)h+="<span>…</span>";h+=btn(i,i+1,i===page?"on":"");prev=i}
+  return h+btn(page+1,"下一頁 ›");
+}
+
+function render(){
+  fillFilters();
+  const ym=ymd(cur).slice(0,7),f=filt(),on=f.active;
+  const key=on?f.key:ym;
+  if(key!==lastKey){page=0;lastKey=key}   // 換月份或篩選條件時回到第一頁
+  $("mlabel").textContent=on?"篩選結果":cur.getFullYear()+" 年 "+(cur.getMonth()+1)+" 月";
+  $("prev").hidden=$("next").hidden=on;
+  $("mlabel").disabled=on;   // 篩選中顯示「篩選結果」，不選月份
+  $("fToggle").classList.toggle("on",on);
+  const rows=data.filter(r=>on?f.test(r):r.date.startsWith(ym))
+    .sort((a,b)=>b.date.localeCompare(a.date)||(b.time||"").localeCompare(a.time||"")||b.id-a.id);
+  let inc=0,exp=0,by={};
+  rows.forEach(r=>{
+    if(signOf(r.type)>0)inc+=r.amount;
+    else{exp+=r.amount;const b=by[r.cat]||(by[r.cat]={v:0,t:r.type});b.v+=r.amount}
+  });
+  $("sInc").textContent=fmt(inc);$("sExp").textContent=fmt(exp);$("sBal").textContent=fmt(inc-exp);
+  const ents=Object.entries(by).sort((a,b)=>b[1].v-a[1].v);
+  $("breakdown").hidden=!ents.length;
+  $("breakdown").innerHTML=ents.map(([c,b])=>`<div class="cat"><span>${esc(c)}</span><div class="bar"><i style="width:${b.v/exp*100}%"></i></div><span>${fmt(b.v)}</span></div>`).join("");
+  if(!rows.length){$("list").innerHTML='<div class="empty">'+(on?"沒有符合條件的紀錄":"本月尚無紀錄，按 + 新增")+'</div>';$("pager").innerHTML="";return}
+  const pages=Math.ceil(rows.length/PER);
+  if(page>=pages)page=pages-1;
+  $("pager").innerHTML=pages>1?pagerHtml(pages)+`<small>第 ${page+1} / ${pages} 頁，共 ${rows.length} 筆</small>`:"";
+  let html="";
+  for(const r of rows.slice(page*PER,page*PER+PER)){
+    // 日期直接放在每筆裡（篩選跨年時顯示完整年月日）
+    const w="日一二三四五六"[new Date(r.date+"T00:00").getDay()];
+    const when=(on?r.date:r.date.slice(5).replace("-","/"))+" 週"+w+(r.time?" "+r.time:"");
+    html+=`<div class="item" data-id="${r.id}"><div class="top"><div class="m">${esc(r.name||r.cat)}<small>${when} · ${esc(r.cat)}${r.note?" · "+esc(r.note):""}</small></div><b class="${signOf(r.type)>0?"inc":"exp"}">${signOf(r.type)>0?"+":"-"}${fmt(r.amount)}</b></div><div class="act"><button type="button" data-edit="${r.id}">編輯</button><button type="button" class="d" data-del="${r.id}">刪除</button></div></div>`;
+  }
+  $("list").innerHTML=html;
+}
+
+// ---- 類型／分類設定（存在本機）：自訂項目可新增、刪除 ----
+const isCustomType=id=>cfg.types.some(t=>t.id===id);
+const isCustomCat=(t,n)=>(cfg.cats[t]||[]).some(x=>x[1]===n);
+
+// 新增帳目視窗：只負責選類型與分類
+function drawTypes(){
+  $("typeSeg").innerHTML=allTypes().map(t=>`<button type="button" data-t="${esc(t.id)}" class="${t.id===type?"on":""}">${esc(t.name)}</button>`).join("");
+}
+function drawCats(){
+  $("cats").innerHTML=catsOf(type).map(([,n])=>`<button type="button" data-c="${esc(n)}" class="${n===cat?"on":""}">${esc(n)}</button>`).join("")
+    +((cfg.cats[type]||[]).length?"":'<div style="grid-column:1/-1;font-size:12px;color:var(--sub)">尚未建立分類，可到頁面下方「🏷 管理類型與分類」新增</div>');
+}
+function setType(t){
+  type=t;
+  if(!catsOf(t).some(x=>x[1]===cat))cat=catsOf(t)[0][1];
+  drawTypes();drawCats();
+}
+
+// 「管理類型與分類」視窗：新增、刪除自訂項目（內建與帳目裡出現過的項目不可刪）
+let mgType="exp";
+function drawMg(){
+  const ts=allTypes();
+  if(!ts.some(t=>t.id===mgType))mgType="exp";
+  $("mgTypes").innerHTML=ts.map(t=>{
+    const cu=isCustomType(t.id);
+    return `<span class="${cu?"cu":""}">${esc(t.name)} (${t.sign>0?"+":"−"})${cu?` <button type="button" data-dt="${esc(t.id)}" title="刪除">✕</button>`:""}</span>`;
+  }).join("");
+  $("mgType").innerHTML=ts.map(t=>`<option value="${esc(t.id)}">${esc(t.name)}</option>`).join("");
+  $("mgType").value=mgType;
+  $("mgCats").innerHTML=catsOf(mgType).map(([e,n])=>{
+    const cu=isCustomCat(mgType,n);
+    return `<span class="${cu?"cu":""}">${esc(n)}${cu?` <button type="button" data-dc="${esc(n)}" title="刪除">✕</button>`:""}</span>`;
+  }).join("");
+}
+async function delType(id){
+  const n=data.filter(r=>r.type===id).length;
+  if(n)return tell("有 "+n+" 筆帳目使用這個類型，請先修改或刪除那些帳目");
+  if(!await ask("刪除類型「"+typeInfo(id).name+"」及其自訂分類？"))return;
+  (cfg.cats[id]||[]).forEach(([,name])=>enqueue({op:"cdel",item:{k:"cat",type:id,name}}));
+  enqueue({op:"cdel",item:{k:"type",id}});
+  cfg.types=cfg.types.filter(t=>t.id!==id);delete cfg.cats[id];lset("ledger.cfg",cfg);
+  drawMg();
+}
+async function delCat(t,name){
+  const n=data.filter(r=>r.type===t&&r.cat===name).length;
+  if(n)return tell("有 "+n+" 筆帳目使用這個分類，請先修改或刪除那些帳目");
+  if(!await ask("刪除分類「"+name+"」？"))return;
+  cfg.cats[t]=(cfg.cats[t]||[]).filter(x=>x[1]!==name);lset("ledger.cfg",cfg);
+  enqueue({op:"cdel",item:{k:"cat",type:t,name}});
+  drawMg();
+}
+function addTypeFromInput(){
+  const name=$("tyName").value.trim();
+  if(!name)return $("tyName").focus();
+  if(allTypes().some(t=>t.name===name))return tell("已有同名的類型");
+  const sign=+$("tySign").value;
+  const t={id:(sign>0?"+":"-")+name,name,sign};
+  cfg.types.push(t);lset("ledger.cfg",cfg);
+  enqueue({op:"cset",item:{k:"type",id:t.id,name:t.name,sign:t.sign}});
+  $("tyName").value="";mgType=t.id;drawMg();
+}
+function addCatFromInput(){
+  const s=$("caName").value.trim();
+  const name=s;
+  if(!name)return $("caName").focus();
+  if(catsOf(mgType).some(x=>x[1]===name))return tell("這個類型已有同名的分類");
+  (cfg.cats[mgType]=cfg.cats[mgType]||[]).push(["",name]);lset("ledger.cfg",cfg);
+  enqueue({op:"cset",item:{k:"cat",type:mgType,name}});
+  $("caName").value="";drawMg();
+}
+function openDlg(r){
+  edit=r||null;
+  cat=r?r.cat:"";
+  setType(r?r.type:"exp");
+  $("nm").value=r?r.name||"":"";
+  $("amt").value=r?r.amount:"";
+  $("date").value=r?r.date:ymd(new Date());
+  $("note").value=r?r.note||"":"";
+  $("del").hidden=!r;
+  $("dlg").showModal();
+  if(!r)$("amt").focus();
+}
+
+$("fab").onclick=()=>openDlg();
+$("cancel").onclick=()=>$("dlg").close();
+$("typeSeg").onclick=e=>{const b=e.target.closest("button");if(b)setType(b.dataset.t)};
+$("cats").onclick=e=>{const b=e.target.closest("button");if(b){cat=b.dataset.c;drawCats()}};
+
+// 管理類型與分類視窗
+$("mgBtn").onclick=()=>{mgType="exp";drawMg();$("mgDlg").showModal()};
+$("mgClose").onclick=()=>$("mgDlg").close();
+$("mgDlg").addEventListener("close",render);   // 關閉後更新篩選選單
+$("mgType").onchange=()=>{mgType=$("mgType").value;drawMg()};
+$("mgTypes").onclick=e=>{const b=e.target.closest("button");if(b)delType(b.dataset.dt)};
+$("mgCats").onclick=e=>{const b=e.target.closest("button");if(b)delCat(mgType,b.dataset.dc)};
+$("tyAdd").onclick=addTypeFromInput;
+$("caAdd").onclick=addCatFromInput;
+[["tyName","tyAdd"],["caName","caAdd"]].forEach(([i,b])=>$(i).addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();$(b).click()}}));
+$("list").onclick=e=>{
+  const it=e.target.closest(".item");if(!it)return;
+  const r=data.find(x=>x.id==it.dataset.id);if(!r)return;
+  const b=e.target.closest("button");
+  if(b&&b.dataset.del)delRec(r.id);else openDlg(r);   // 刪除鈕直接刪；其他（含編輯鈕、點帳目）開編輯視窗
+};
+$("pager").onclick=e=>{
+  const b=e.target.closest("button");if(!b||b.disabled)return;
+  page=+b.dataset.p;render();
+  $("list").scrollIntoView&&$("list").scrollIntoView({block:"start"});
+};
+$("form").onsubmit=()=>{
+  const amount=parseFloat($("amt").value);
+  if(!(amount>0))return;
+  const rec={id:edit?edit.id:Date.now(),type,cat,amount,date:$("date").value,time:edit?edit.time||"":"",name:$("nm").value.trim(),note:$("note").value.trim()};
+  data=edit?data.map(r=>r.id===edit.id?rec:r):[...data,rec];
+  save();enqueue({op:"set",rec});
+  const d=new Date(rec.date+"T00:00");cur=new Date(d.getFullYear(),d.getMonth(),1);
+  render();
+};
+async function delRec(id){
+  if(!await ask("刪除這筆紀錄？"))return false;
+  data=data.filter(r=>r.id!==id);save();enqueue({op:"del",id});render();
+  return true;
+}
+$("del").onclick=async()=>{if(await delRec(edit.id))$("dlg").close()};
+// 年份、月份選擇視窗：點上方月份標籤開啟；有帳目的月份右上角有小點
+let pkY=0;
+function drawPk(){
+  $("pkYearIn").value=pkY;
+  $("pkGrid").innerHTML=Array.from({length:12},(_,i)=>{
+    const has=data.some(r=>r.date.startsWith(pkY+"-"+String(i+1).padStart(2,"0")));
+    const sel=pkY===cur.getFullYear()&&i===cur.getMonth();
+    return `<button type="button" data-m="${i}" class="${sel?"on":""}${has?" has":""}">${i+1} 月</button>`;
+  }).join("");
+}
+$("mlabel").onclick=()=>{pkY=cur.getFullYear();drawPk();$("pkDlg").showModal()};
+$("pkPrev").onclick=()=>{pkY--;drawPk()};
+$("pkNext").onclick=()=>{pkY++;drawPk()};
+$("pkYearIn").onchange=()=>{const y=parseInt($("pkYearIn").value,10);if(y>=1970&&y<=2200)pkY=y;drawPk()};
+$("pkGrid").onclick=e=>{
+  const b=e.target.closest("button");if(!b)return;
+  cur=new Date(pkY,+b.dataset.m,1);$("pkDlg").close();render();
+};
+$("pkToday").onclick=()=>{const n=new Date();cur=new Date(n.getFullYear(),n.getMonth(),1);$("pkDlg").close();render()};
+$("pkClose").onclick=()=>$("pkDlg").close();
+$("prev").onclick=()=>{cur.setMonth(cur.getMonth()-1);render()};
+$("next").onclick=()=>{cur.setMonth(cur.getMonth()+1);render()};
+
+function download(name,text,mime){
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([text],{type:mime}));a.download=name;a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+$("exJson").onclick=()=>download("ledger-"+ymd(new Date())+".json",JSON.stringify(data),"application/json");
+$("exCsv").onclick=()=>{
+  const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
+  const f=filt(),src=f.active?data.filter(f.test):data;  // 有篩選時只匯出篩選結果
+  const csv="日期,時間,名稱,類型,分類,金額,備註\n"+[...src].sort((a,b)=>a.date.localeCompare(b.date)||(a.time||"").localeCompare(b.time||""))
+    .map(r=>[r.date,r.time||"",q(r.name||""),typeInfo(r.type).name,r.cat,r.amount,q(r.note||"")].join(",")).join("\n");
+  download("ledger-"+ymd(new Date())+".csv","﻿"+csv,"text/csv");
+};
+$("imJson").onclick=()=>$("file").click();
+$("file").onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;
+  try{
+    const arr=JSON.parse(await f.text());
+    if(!Array.isArray(arr)||!arr.every(r=>r&&r.date&&r.amount>0&&typeof r.type==="string"&&r.type&&r.cat))throw 0;
+    if(await ask("將以備份檔取代目前 "+data.length+" 筆資料，共 "+arr.length+" 筆，確定？")){
+      const keep=new Set(arr.map(r=>r.id));
+      data.filter(r=>!keep.has(r.id)).forEach(r=>queue.push({op:"del",id:r.id}));
+      arr.forEach(rec=>queue.push({op:"set",rec}));
+      data=arr;save();render();
+      if(sync){lset("ledger.queue",queue);flush()}else queue=[];   // 關閉時 flush 會直接略過
+    }
+  }catch{tell("檔案格式不正確")}
+  e.target.value="";
+};
+
+$("fToggle").onclick=()=>{$("fpanel").hidden=!$("fpanel").hidden};
+const FIDS=["fq","fType","fCat","fFrom","fTo","fMin","fMax"];
+FIDS.forEach(id=>$(id).addEventListener("input",render));
+$("fClear").onclick=()=>{FIDS.forEach(id=>$(id).value="");render()};
+
+// 當月報表：以目前用 ‹ › 選的月份為準（不受篩選影響），可列印或存成 PDF
+function showReport(){
+  const ym=ymd(cur).slice(0,7);
+  const rows=data.filter(r=>r.date.startsWith(ym))
+    .sort((a,b)=>a.date.localeCompare(b.date)||(a.time||"").localeCompare(b.time||"")||a.id-b.id);
+  let inc=0,exp=0;const ci={},ce={};
+  rows.forEach(r=>{
+    if(signOf(r.type)>0){inc+=r.amount;ci[r.cat]=(ci[r.cat]||0)+r.amount}
+    else{exp+=r.amount;ce[r.cat]=(ce[r.cat]||0)+r.amount}
+  });
+  const share=(o,tot)=>Object.entries(o).sort((a,b)=>b[1]-a[1]).map(([c,v])=>
+    `<tr><td>${esc(c)}</td><td class="n">${fmt(v)}</td><td class="n">${(v/tot*100).toFixed(1)}%</td><td><div class="rb"><i style="width:${v/tot*100}%"></i></div></td></tr>`).join("")
+    ||'<tr><td colspan="4">無</td></tr>';
+  const detail=rows.map(r=>{
+    const p=signOf(r.type)>0;
+    return `<tr><td>${r.date.slice(5)}</td><td>${r.time||""}</td><td>${esc(r.name||"")}</td><td>${esc(typeInfo(r.type).name)}</td><td>${esc(r.cat)}</td><td class="n ${p?"inc":"exp"}">${p?"+":"-"}${fmt(r.amount)}</td><td>${esc(r.note||"")}</td></tr>`;
+  }).join("")||'<tr><td colspan="7">本月沒有帳目</td></tr>';
+  $("rpBody").innerHTML=`<h2>${cur.getFullYear()} 年 ${cur.getMonth()+1} 月 收支報表</h2>
+    <div class="rsum"><div><small>收入</small><b class="inc">${fmt(inc)}</b></div><div><small>支出</small><b class="exp">${fmt(exp)}</b></div>
+    <div><small>結餘</small><b>${fmt(inc-exp)}</b></div><div><small>筆數</small><b>${rows.length}</b></div></div>
+    <h3>支出占比</h3><table><tr><th>分類</th><th class="n">金額</th><th class="n">占比</th><th></th></tr>${share(ce,exp)}</table>
+    <h3>收入占比</h3><table><tr><th>分類</th><th class="n">金額</th><th class="n">占比</th><th></th></tr>${share(ci,inc)}</table>
+    <h3>帳目明細</h3><table><tr><th>日期</th><th>時間</th><th>名稱</th><th>類型</th><th>分類</th><th class="n">金額</th><th>備註</th></tr>${detail}</table>`;
+  $("rp").hidden=false;$("rp").scrollTop=0;
+}
+$("rpBtn").onclick=showReport;
+$("rpClose").onclick=()=>{$("rp").hidden=true};
+$("rpPrint").onclick=()=>window.print();
+// 在 Google 試算表建立（或重建）該月工作表；指令照一般變更排進佇列，會排在先前的帳目變更之後執行
+$("rpSheet").onclick=async()=>{
+  if(!sync)return tell("請先在「☁️ 雲端同步設定」填入網址與密碼");
+  const ym=ymd(cur).slice(0,7);
+  const note=syncOn()?"":"\n目前同步已關閉，開啟後才會執行。";
+  if(!await ask("要在 Google 試算表建立（或重建）「"+ym+"」工作表嗎？\n內容含摘要、支出／收入占比、圓餅圖與當月明細。"+note,{ok:"建立"}))return;
+  enqueue({op:"month",ym});
+  if(syncOn())tell("指令已送出，約需數秒。狀態列顯示「已同步」後，試算表就會出現「"+ym+"」工作表。");
+};
+
+$("clearBtn").onclick=async()=>{
+  if(!await ask("清除這台裝置上的所有帳目？\n此動作無法復原，建議先備份 JSON。",{ok:"清除"}))return;
+  // 已啟用同步時，本機只是雲端的快取，只清本機的話下次同步會被拉回來
+  const cloud=syncOn()&&await ask("要連雲端試算表裡的帳目一起清除嗎？\n一併清除：所有裝置都會清空\n只清本機：下次同步會從雲端拉回",{ok:"一併清除",no:"只清本機"});
+  const ids=data.map(r=>r.id);
+  data=[];queue=cloud?ids.map(id=>({op:"del",id})):[];
+  save();lset("ledger.queue",queue);render();
+  if(cloud)flush();
+};
+$("syncBtn").onclick=()=>{$("syUrl").value=sync?sync.url:"";$("syTok").value=sync?sync.token:"";$("syncDlg").showModal()};
+$("syCancel").onclick=()=>$("syncDlg").close();
+$("syncForm").onsubmit=()=>{
+  const url=$("syUrl").value.trim(),token=$("syTok").value;
+  if(!url){sync=null;queue=[];try{localStorage.removeItem("ledger.sync");localStorage.removeItem("ledger.queue")}catch{}status("");$("syncSw").checked=false;return}
+  sync={url,token,on:true};lset("ledger.sync",sync);$("syncSw").checked=true;
+  lset("ledger.cfgSynced",false);   // 換了試算表：下次拉取時重新合併類型／分類設定
+  queue=data.map(rec=>({op:"set",rec}));lset("ledger.queue",queue);  // 首次：本機資料全部上傳（以 id 合併）
+  flush();
+};
+
+// 同步開關：開＝立刻同步；關＝完全不連線（變更先存本機，重新開啟後補送）；尚未設定時開啟設定視窗
+$("syncSw").checked=syncOn();
+$("syncSw").onchange=()=>{
+  if(!sync){$("syncSw").checked=false;$("syncBtn").click();return}
+  sync.on=$("syncSw").checked;lset("ledger.sync",sync);
+  if(sync.on)flush();else status("☁️ 同步已關閉（變更先存在本機，開啟後補送）");
+};
+
+render();
+if(syncOn())flush();
+else if(sync)status("☁️ 同步已關閉（變更先存在本機，開啟後補送）");
+if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body>
+</html>
