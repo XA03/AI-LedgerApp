@@ -9,8 +9,8 @@
 <link rel="apple-touch-icon" href="icon.svg">
 <title>簡易記帳</title>
 <style>
-:root{--bg:#f4f6f5;--card:#fff;--text:#1d2a27;--sub:#6b7b77;--line:#e3e8e6;--main:#2f7d6d;--exp:#d9534f;--inc:#2f7d6d}
-@media (prefers-color-scheme:dark){:root{--bg:#121816;--card:#1c2522;--text:#e8efed;--sub:#8fa19c;--line:#2a3532;--main:#4fb5a1;--exp:#ef7b77;--inc:#4fb5a1}}
+:root{--bg:#f4f6f5;--card:#fff;--text:#1d2a27;--sub:#6b7b77;--line:#e3e8e6;--main:#2f7d6d;--exp:#d9534f;--inc:#2f7d6d;--bal:#3b6fd4}
+@media (prefers-color-scheme:dark){:root{--bg:#121816;--card:#1c2522;--text:#e8efed;--sub:#8fa19c;--line:#2a3532;--main:#4fb5a1;--exp:#ef7b77;--inc:#4fb5a1;--bal:#7aa5f5}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font:16px/1.4 system-ui,"Microsoft JhengHei",sans-serif;padding-bottom:90px}
 main{max-width:640px;margin:0 auto;padding:0 16px}
@@ -54,6 +54,22 @@ input,select{width:100%;padding:10px;border:1px solid var(--line);border-radius:
 .syncrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px;font-size:13px;color:var(--sub)}
 .syncrow label{display:flex;align-items:center;gap:6px;margin:0;color:var(--text);font-size:14px}
 .syncrow input{width:18px;height:18px;padding:0}
+/* 版面：手機單欄由上往下（#side 不產生外框，內容直接參與 main 的排列，用 order 把列表排在工具之前）；
+   電腦（≥900px）兩欄：左欄 #side 捲動時固定在畫面上，內容太長時自己捲動，右欄是帳目列表 */
+main{display:flex;flex-direction:column}
+#side{display:contents}
+main>header{order:0}
+#side>.card{order:1}
+#listwrap{order:2}
+#side>.tools,#side>.syncrow{order:3}
+main .card{margin:5px 0}   /* flex 內外距不會合併，所以手機版各減半以維持原本間距 */
+@media (min-width:900px){
+  main{max-width:1040px;display:grid;grid-template-columns:340px minmax(0,1fr);column-gap:20px;align-items:start}
+  main>header{grid-column:1/-1}
+  #side{display:block;grid-column:1;grid-row:2/span 30;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow-y:auto;padding-right:2px}
+  #listwrap{grid-column:2;grid-row:2/span 30}
+  main .card{margin:10px 0}
+}
 .mbtn{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-weight:700}
 .mbtn:disabled{opacity:.6}
 .pkyear{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:12px}
@@ -63,6 +79,9 @@ input,select{width:100%;padding:10px;border:1px solid var(--line);border-radius:
 .pkgrid button.on{background:var(--main);color:#fff;border-color:var(--main)}
 .pkgrid button.has::after{content:"";position:absolute;top:6px;right:8px;width:6px;height:6px;border-radius:50%;background:var(--main)}
 .pkgrid button.on.has::after{background:#fff}
+.mv{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.mvarr{grid-column:1/-1;text-align:center;color:var(--sub);font-size:13px}
+#mvGo{background:var(--main);color:#fff;border-color:var(--main)}
 .addbox{display:flex;gap:6px;margin-top:8px}
 .addbox[hidden]{display:none}
 .addbox input{flex:1;min-width:0}
@@ -97,6 +116,10 @@ input,select{width:100%;padding:10px;border:1px solid var(--line);border-radius:
 .rpbar{display:flex;gap:8px;max-width:760px;margin:0 auto 12px}
 .rpbar button{padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--card)}
 .rpbar .pri{background:var(--main);color:#fff;border-color:var(--main)}
+.rpopts{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;max-width:760px;margin:0 auto 12px}
+.rpopts label{display:flex;align-items:center;gap:6px;margin:0;color:var(--text);font-size:14px}
+.rpopts select{width:auto}
+.rpopts input[type=checkbox]{width:18px;height:18px;padding:0}
 #rpBody{max-width:760px;margin:0 auto}
 #rpBody h2{margin:6px 0 12px}
 #rpBody h3{margin:20px 0 6px;font-size:16px}
@@ -109,8 +132,17 @@ input,select{width:100%;padding:10px;border:1px solid var(--line);border-radius:
 .rb{height:8px;background:var(--line);border-radius:4px;overflow:hidden;min-width:60px}
 .rb i{display:block;height:100%;background:var(--main)}
 .rb,.rb i{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.pie{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:10px 0}
+.pie svg{width:180px;height:180px;flex:none}
+.pie ul,.lg{list-style:none;margin:0;padding:0;font-size:14px}
+.pie ul{flex:1;min-width:160px}
+.pie li,.lg li{display:flex;align-items:center;gap:6px;margin:3px 0}
+.pie li span{margin-left:auto;padding-left:12px;color:var(--sub)}
+.pie i,.lg i{display:inline-block;width:12px;height:12px;border-radius:3px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.line svg{width:100%;height:auto}
+.lg{display:flex;gap:14px;margin-top:4px}
 @media print{
-  :root{--bg:#fff;--card:#fff;--text:#000;--sub:#555;--line:#ccc;--exp:#c0392b;--inc:#1e7a5f;--main:#2f7d6d}
+  :root{--bg:#fff;--card:#fff;--text:#000;--sub:#555;--line:#ccc;--exp:#c0392b;--inc:#1e7a5f;--main:#2f7d6d;--bal:#3b6fd4}
   main,#fab,dialog,.noprint{display:none!important}
   body{padding:0;background:#fff}
   #rp{position:static;overflow:visible;padding:0}
@@ -126,6 +158,7 @@ input,select{width:100%;padding:10px;border:1px solid var(--line);border-radius:
       <button class="ic" id="prev">‹</button><button type="button" class="mbtn" id="mlabel" title="選擇年份與月份"></button><button class="ic" id="next">›</button>
     </div>
   </header>
+  <aside id="side">
   <div class="card sum">
     <div><small>收入</small><b class="inc" id="sInc">0</b></div>
     <div><small>支出</small><b class="exp" id="sExp">0</b></div>
@@ -147,8 +180,6 @@ input,select{width:100%;padding:10px;border:1px solid var(--line);border-radius:
     </div>
   </div>
   <div class="card" id="breakdown"></div>
-  <div id="list"></div>
-  <div id="pager"></div>
   <div class="tools">
     <button id="exCsv">匯出 CSV</button>
     <button id="exJson">備份 JSON</button>
@@ -160,11 +191,21 @@ input,select{width:100%;padding:10px;border:1px solid var(--line);border-radius:
     <button id="clearBtn" style="color:var(--exp)">🗑 清除本地資料</button>
   </div>
   <div class="syncrow"><label><input type="checkbox" id="syncSw"> ☁️ 雲端同步</label><span id="syncStatus"></span></div>
+  </aside>
+  <div id="listwrap">
+    <div id="list"></div>
+    <div id="pager"></div>
+  </div>
 </main>
 <button id="fab" aria-label="新增">+</button>
 
 <div id="rp" hidden>
   <div class="rpbar noprint"><button class="pri" id="rpPrint">🖨 列印／存成 PDF</button><button id="rpSheet">📊 建立試算表月表</button><button id="rpClose">關閉</button></div>
+  <div class="rpopts noprint">
+    <label>起始 <select id="rpFrom"></select></label>
+    <label>結束 <select id="rpTo"></select></label>
+    <label><input type="checkbox" id="rpDetail" checked> 包含帳目明細</label>
+  </div>
   <div id="rpBody"></div>
 </div>
 
@@ -215,7 +256,14 @@ input,select{width:100%;padding:10px;border:1px solid var(--line);border-radius:
     <input id="caName" type="text" maxlength="20" placeholder="新分類名稱，例如：餐飲">
     <button type="button" id="caAdd">新增</button>
   </div>
-  <p style="font-size:12px;color:var(--sub)">只有自訂項目有 ✕ 可刪除；已有帳目使用的項目不能刪。</p>
+  <label>批次搬移帳目（把某類型／分類的帳目改成另一個）</label>
+  <div class="mv">
+    <select id="mvFromType"></select><select id="mvFromCat"></select>
+    <div class="mvarr">↓ 搬到</div>
+    <select id="mvToType"></select><select id="mvToCat"></select>
+  </div>
+  <div class="addbox"><small id="mvInfo" style="flex:1;align-self:center;color:var(--sub)"></small><button type="button" id="mvGo">搬移</button></div>
+  <p style="font-size:12px;color:var(--sub)">只有自訂項目有 ✕ 可刪除；已有帳目使用的項目不能刪，可先用上方的批次搬移。</p>
   <div class="row"><button type="button" class="pri" id="mgClose">完成</button></div>
 </dialog>
 
@@ -443,7 +491,46 @@ function setType(t){
 
 // 「管理類型與分類」視窗：新增、刪除自訂項目（內建與帳目裡出現過的項目不可刪）
 let mgType="exp";
+// 批次搬移：來源（類型＋分類，分類空白＝全部）→ 目的（類型＋分類，分類空白＝沿用原分類名稱）
+let mv={ft:"exp",fc:"",tt:"exp",tc:""};
+function drawMv(){
+  const ts=allTypes();
+  if(!ts.some(t=>t.id===mv.ft))mv.ft="exp";
+  if(!ts.some(t=>t.id===mv.tt))mv.tt="exp";
+  if(mv.fc&&!catsOf(mv.ft).some(c=>c[1]===mv.fc))mv.fc="";
+  if(mv.tc&&!catsOf(mv.tt).some(c=>c[1]===mv.tc))mv.tc="";
+  const opt=(arr,sel)=>arr.map(([v,t])=>`<option value="${esc(v)}"${v===sel?" selected":""}>${esc(t)}</option>`).join("");
+  const T=ts.map(t=>[t.id,t.name]);
+  $("mvFromType").innerHTML=opt(T,mv.ft);
+  $("mvToType").innerHTML=opt(T,mv.tt);
+  $("mvFromCat").innerHTML=opt([["","（全部分類）"],...catsOf(mv.ft).map(c=>[c[1],c[1]])],mv.fc);
+  $("mvToCat").innerHTML=opt([["","（沿用原分類名稱）"],...catsOf(mv.tt).map(c=>[c[1],c[1]])],mv.tc);
+  $("mvInfo").textContent="符合 "+data.filter(r=>r.type===mv.ft&&(!mv.fc||r.cat===mv.fc)).length+" 筆";
+}
+async function moveRecs(){
+  const m=data.filter(r=>r.type===mv.ft&&(!mv.fc||r.cat===mv.fc));
+  if(!m.length)return tell("沒有符合的帳目");
+  if(mv.ft===mv.tt&&(!mv.tc||(mv.fc&&mv.tc===mv.fc)))return tell("來源與目的相同，不需要搬移");
+  const a=typeInfo(mv.ft),b=typeInfo(mv.tt);
+  const warn=a.sign!==b.sign?"\n注意：收支方向會從「"+(a.sign>0?"收入":"支出")+"」變成「"+(b.sign>0?"收入":"支出")+"」，統計會跟著改變。":"";
+  const to=b.name+" / "+(mv.tc||"沿用原分類");
+  if(!await ask("把 "+m.length+" 筆帳目搬到「"+to+"」？"+warn,{ok:"搬移"}))return;
+  const ids=new Set(m.map(r=>r.id)),recs=[];
+  data=data.map(r=>{
+    if(!ids.has(r.id))return r;
+    const n={...r,type:mv.tt,cat:mv.tc||r.cat};recs.push(n);return n;
+  });
+  // 目的類型補上被搬過去的分類（自訂分類，之後可管理、會同步）
+  const names=[...new Set(recs.map(r=>r.cat))].filter(n=>n!=="未分類"&&!(cfg.cats[mv.tt]||[]).some(x=>x[1]===n));
+  names.forEach(name=>{(cfg.cats[mv.tt]=cfg.cats[mv.tt]||[]).push(["",name]);enqueue({op:"cset",item:{k:"cat",type:mv.tt,name}})});
+  if(names.length)lset("ledger.cfg",cfg);
+  save();
+  if(sync){recs.forEach(rec=>queue.push({op:"set",rec}));lset("ledger.queue",queue);if(syncOn())flush()}
+  mv.fc="";drawMg();render();
+  tell("已搬移 "+recs.length+" 筆帳目。");
+}
 function drawMg(){
+  drawMv();
   const ts=allTypes();
   if(!ts.some(t=>t.id===mgType))mgType="exp";
   $("mgTypes").innerHTML=ts.map(t=>{
@@ -518,6 +605,11 @@ $("mgDlg").addEventListener("close",render);   // 關閉後更新篩選選單
 $("mgType").onchange=()=>{mgType=$("mgType").value;drawMg()};
 $("mgTypes").onclick=e=>{const b=e.target.closest("button");if(b)delType(b.dataset.dt)};
 $("mgCats").onclick=e=>{const b=e.target.closest("button");if(b)delCat(mgType,b.dataset.dc)};
+$("mvFromType").onchange=()=>{mv.ft=$("mvFromType").value;mv.fc="";drawMv()};
+$("mvFromCat").onchange=()=>{mv.fc=$("mvFromCat").value;drawMv()};
+$("mvToType").onchange=()=>{mv.tt=$("mvToType").value;mv.tc="";drawMv()};
+$("mvToCat").onchange=()=>{mv.tc=$("mvToCat").value;drawMv()};
+$("mvGo").onclick=moveRecs;
 $("tyAdd").onclick=addTypeFromInput;
 $("caAdd").onclick=addCatFromInput;
 [["tyName","tyAdd"],["caName","caAdd"]].forEach(([i,b])=>$(i).addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();$(b).click()}}));
@@ -605,42 +697,127 @@ const FIDS=["fq","fType","fCat","fFrom","fTo","fMin","fMax"];
 FIDS.forEach(id=>$(id).addEventListener("input",render));
 $("fClear").onclick=()=>{FIDS.forEach(id=>$(id).value="");render()};
 
-// 當月報表：以目前用 ‹ › 選的月份為準（不受篩選影響），可列印或存成 PDF
-function showReport(){
-  const ym=ymd(cur).slice(0,7);
-  const rows=data.filter(r=>r.date.startsWith(ym))
-    .sort((a,b)=>a.date.localeCompare(b.date)||(a.time||"").localeCompare(b.time||"")||a.id-b.id);
-  let inc=0,exp=0;const ci={},ce={};
-  rows.forEach(r=>{
-    if(signOf(r.type)>0){inc+=r.amount;ci[r.cat]=(ci[r.cat]||0)+r.amount}
-    else{exp+=r.amount;ce[r.cat]=(ce[r.cat]||0)+r.amount}
-  });
-  const share=(o,tot)=>Object.entries(o).sort((a,b)=>b[1]-a[1]).map(([c,v])=>
-    `<tr><td>${esc(c)}</td><td class="n">${fmt(v)}</td><td class="n">${(v/tot*100).toFixed(1)}%</td><td><div class="rb"><i style="width:${v/tot*100}%"></i></div></td></tr>`).join("")
-    ||'<tr><td colspan="4">無</td></tr>';
-  const detail=rows.map(r=>{
-    const p=signOf(r.type)>0;
-    return `<tr><td>${r.date.slice(5)}</td><td>${r.time||""}</td><td>${esc(r.name||"")}</td><td>${esc(typeInfo(r.type).name)}</td><td>${esc(r.cat)}</td><td class="n ${p?"inc":"exp"}">${p?"+":"-"}${fmt(r.amount)}</td><td>${esc(r.note||"")}</td></tr>`;
-  }).join("")||'<tr><td colspan="7">本月沒有帳目</td></tr>';
-  $("rpBody").innerHTML=`<h2>${cur.getFullYear()} 年 ${cur.getMonth()+1} 月 收支報表</h2>
-    <div class="rsum"><div><small>收入</small><b class="inc">${fmt(inc)}</b></div><div><small>支出</small><b class="exp">${fmt(exp)}</b></div>
-    <div><small>結餘</small><b>${fmt(inc-exp)}</b></div><div><small>筆數</small><b>${rows.length}</b></div></div>
-    <h3>支出占比</h3><table><tr><th>分類</th><th class="n">金額</th><th class="n">占比</th><th></th></tr>${share(ce,exp)}</table>
-    <h3>收入占比</h3><table><tr><th>分類</th><th class="n">金額</th><th class="n">占比</th><th></th></tr>${share(ci,inc)}</table>
-    <h3>帳目明細</h3><table><tr><th>日期</th><th>時間</th><th>名稱</th><th>類型</th><th>分類</th><th class="n">金額</th><th>備註</th></tr>${detail}</table>`;
+// 報表：可選起訖月份（預設只有目前用 ‹ › 選的那一個月，不受篩選影響）。
+// 摘要、每月統計、占比、明細都依這段期間計算；可列印或存成 PDF
+const ymOf=d=>d.slice(0,7);
+function monthsBetween(a,b){
+  const out=[];let [y,m]=a.split("-").map(Number);const [y2,m2]=b.split("-").map(Number);
+  while(y<y2||(y===y2&&m<=m2)){out.push(y+"-"+String(m).padStart(2,"0"));if(++m>12){m=1;y++}}
+  return out;
+}
+let rpTouched=false;   // 使用者是否動過「包含帳目明細」
+function rpRange(){
+  let a=$("rpFrom").value,b=$("rpTo").value;
+  if(a>b)[a,b]=[b,a];
+  return [a,b];
+}
+function openReport(){
+  const cm=ymd(cur).slice(0,7),tm=ymd(new Date()).slice(0,7);
+  const have=[...new Set([...data.map(r=>ymOf(r.date)),cm,tm])].sort();
+  const opts=monthsBetween(have[0],have[have.length-1]).map(m=>`<option value="${m}">${m.replace("-"," 年 ")} 月</option>`).join("");
+  $("rpFrom").innerHTML=opts;$("rpTo").innerHTML=opts;
+  $("rpFrom").value=cm;$("rpTo").value=cm;
+  rpTouched=false;$("rpDetail").checked=true;
+  renderReport();
   $("rp").hidden=false;$("rp").scrollTop=0;
 }
-$("rpBtn").onclick=showReport;
+// ---- 報表圖表：純 SVG（不依賴外部套件，離線與列印都能用）----
+const PAL=["#2f7d6d","#e08a3c","#4a78c2","#c0504d","#8e6bbf","#d4b24c","#5aa9a0","#9a9a9a"];
+// 圓餅圖：依金額由大到小，超過 7 項的合併成「其他」
+function pieSvg(o,tot){
+  let en=Object.entries(o).sort((x,y)=>y[1]-x[1]);
+  if(!en.length||!(tot>0))return "";
+  if(en.length>7)en=[...en.slice(0,7),["其他",en.slice(7).reduce((s,e)=>s+e[1],0)]];
+  const R=90,C=100;let ang=-Math.PI/2,paths="";
+  en.forEach(([,v],i)=>{
+    const frac=v/tot,col=PAL[i%PAL.length];
+    if(frac>=0.9999){paths+=`<circle cx="${C}" cy="${C}" r="${R}" fill="${col}"/>`;return}
+    const a2=ang+frac*2*Math.PI;
+    const x1=C+R*Math.cos(ang),y1=C+R*Math.sin(ang),x2=C+R*Math.cos(a2),y2=C+R*Math.sin(a2);
+    paths+=`<path d="M${C} ${C}L${x1.toFixed(2)} ${y1.toFixed(2)}A${R} ${R} 0 ${frac>0.5?1:0} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}Z" fill="${col}" stroke="var(--card)" stroke-width="1"/>`;
+    ang=a2;
+  });
+  const legend=en.map(([c,v],i)=>`<li><i style="background:${PAL[i%PAL.length]}"></i>${esc(c)}<span>${(v/tot*100).toFixed(1)}%</span></li>`).join("");
+  return `<div class="pie"><svg viewBox="0 0 200 200" role="img" aria-label="圓餅圖">${paths}</svg><ul>${legend}</ul></div>`;
+}
+// 長條圖：每月的收入、支出、結餘（至少兩個月才畫）
+function lineSvg(ms,pm){
+  if(ms.length<2)return "";
+  const W=600,H=240,L=56,RM=16,T=14,B=30,w=W-L-RM,h=H-T-B;
+  const ser=[["收入","var(--inc)",m=>pm[m].inc],["支出","var(--exp)",m=>pm[m].exp],["結餘","var(--bal)",m=>pm[m].inc-pm[m].exp]];
+  const vals=ser.flatMap(s=>ms.map(s[2]));
+  const lo=Math.min(0,...vals);let hi=Math.max(0,...vals);if(hi===lo)hi=lo+1;
+  const gw=w/ms.length,bw=Math.min(gw*0.8/3,28),X=i=>L+gw*(i+0.5),Y=v=>T+h*(1-(v-lo)/(hi-lo));
+  let g="";
+  for(let k=0;k<=4;k++){
+    const v=lo+(hi-lo)*k/4,y=Y(v).toFixed(1);
+    g+=`<line x1="${L}" x2="${W-RM}" y1="${y}" y2="${y}" stroke="var(--line)"/><text x="${L-6}" y="${(+y+4).toFixed(1)}" text-anchor="end" font-size="11" fill="currentColor">${Math.round(v).toLocaleString()}</text>`;
+  }
+  const step=Math.ceil(ms.length/10);
+  ms.forEach((m,i)=>{if(i%step===0||i===ms.length-1)g+=`<text x="${X(i).toFixed(1)}" y="${H-10}" text-anchor="middle" font-size="11" fill="currentColor">${m.slice(2)}</text>`});
+  const y0=Y(0);
+  ser.forEach(([,col,f],si)=>{
+    g+=ms.map((m,i)=>{
+      const v=f(m),y=Y(v),x=X(i)+(si-1)*bw-bw/2;
+      return `<rect x="${x.toFixed(1)}" y="${Math.min(y,y0).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(Math.abs(y-y0),v?1:0).toFixed(1)}" fill="${col}"/>`;
+    }).join("");
+  });
+  g+=`<line x1="${L}" x2="${W-RM}" y1="${y0.toFixed(1)}" y2="${y0.toFixed(1)}" stroke="currentColor" stroke-opacity=".5"/>`;
+  const legend=ser.map(([n,col])=>`<li><i style="background:${col}"></i>${n}</li>`).join("");
+  return `<h3>每月趨勢</h3><div class="line"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="每月收入、支出、結餘長條圖">${g}</svg><ul class="lg">${legend}</ul></div>`;
+}
+function renderReport(){
+  const [a,b]=rpRange(),ms=monthsBetween(a,b),multi=ms.length>1;
+  const rows=data.filter(r=>{const m=ymOf(r.date);return m>=a&&m<=b})
+    .sort((x,y)=>x.date.localeCompare(y.date)||(x.time||"").localeCompare(y.time||"")||x.id-y.id);
+  let inc=0,exp=0;const ci={},ce={},pm={};
+  ms.forEach(m=>{pm[m]={inc:0,exp:0,n:0}});
+  rows.forEach(r=>{
+    const p=signOf(r.type)>0,x=pm[ymOf(r.date)];
+    x.n++;
+    if(p){inc+=r.amount;x.inc+=r.amount;ci[r.cat]=(ci[r.cat]||0)+r.amount}
+    else{exp+=r.amount;x.exp+=r.amount;ce[r.cat]=(ce[r.cat]||0)+r.amount}
+  });
+  const share=(o,tot)=>Object.entries(o).sort((x,y)=>y[1]-x[1]).map(([c,v])=>
+    `<tr><td>${esc(c)}</td><td class="n">${fmt(v)}</td><td class="n">${(v/tot*100).toFixed(1)}%</td><td><div class="rb"><i style="width:${v/tot*100}%"></i></div></td></tr>`).join("")
+    ||'<tr><td colspan="4">無</td></tr>';
+  const perMonth=multi?`<h3>每月統計</h3><table><tr><th>月份</th><th class="n">收入</th><th class="n">支出</th><th class="n">結餘</th><th class="n">筆數</th></tr>`
+    +ms.map(m=>{const x=pm[m];return `<tr><td>${m}</td><td class="n">${fmt(x.inc)}</td><td class="n">${fmt(x.exp)}</td><td class="n">${fmt(x.inc-x.exp)}</td><td class="n">${x.n}</td></tr>`}).join("")
+    +`<tr><th>合計</th><th class="n">${fmt(inc)}</th><th class="n">${fmt(exp)}</th><th class="n">${fmt(inc-exp)}</th><th class="n">${rows.length}</th></tr></table>`+lineSvg(ms,pm):"";
+  const detail=$("rpDetail").checked?`<h3>帳目明細</h3><table><tr><th>日期</th><th>時間</th><th>名稱</th><th>類型</th><th>分類</th><th class="n">金額</th><th>備註</th></tr>`
+    +(rows.map(r=>{
+      const p=signOf(r.type)>0;
+      return `<tr><td>${multi?r.date:r.date.slice(5)}</td><td>${r.time||""}</td><td>${esc(r.name||"")}</td><td>${esc(typeInfo(r.type).name)}</td><td>${esc(r.cat)}</td><td class="n ${p?"inc":"exp"}">${p?"+":"-"}${fmt(r.amount)}</td><td>${esc(r.note||"")}</td></tr>`;
+    }).join("")||'<tr><td colspan="7">這段期間沒有帳目</td></tr>')+"</table>":"";
+  const title=multi?a+" ～ "+b+" 收支報表":a.replace("-"," 年 ")+" 月 收支報表";
+  $("rpBody").innerHTML=`<h2>${title}</h2>
+    <div class="rsum"><div><small>收入</small><b class="inc">${fmt(inc)}</b></div><div><small>支出</small><b class="exp">${fmt(exp)}</b></div>
+    <div><small>結餘</small><b>${fmt(inc-exp)}</b></div><div><small>筆數</small><b>${rows.length}</b></div></div>
+    ${perMonth}
+    <h3>支出占比</h3><table><tr><th>分類</th><th class="n">金額</th><th class="n">占比</th><th></th></tr>${share(ce,exp)}</table>${pieSvg(ce,exp)}
+    <h3>收入占比</h3><table><tr><th>分類</th><th class="n">金額</th><th class="n">占比</th><th></th></tr>${share(ci,inc)}</table>${pieSvg(ci,inc)}
+    ${detail}`;
+}
+$("rpBtn").onclick=openReport;
+$("rpFrom").onchange=$("rpTo").onchange=()=>{
+  const [a,b]=rpRange();
+  if(!rpTouched)$("rpDetail").checked=(a===b);   // 跨多個月時預設不含明細（可自行勾選）
+  renderReport();
+};
+$("rpDetail").onchange=()=>{rpTouched=true;renderReport()};
 $("rpClose").onclick=()=>{$("rp").hidden=true};
 $("rpPrint").onclick=()=>window.print();
-// 在 Google 試算表建立（或重建）該月工作表；指令照一般變更排進佇列，會排在先前的帳目變更之後執行
+// 在 Google 試算表建立（或重建）報表期間每個月的工作表（一次最多 12 個月）；
+// 指令照一般變更排進佇列，會排在先前的帳目變更之後執行
 $("rpSheet").onclick=async()=>{
   if(!sync)return tell("請先在「☁️ 雲端同步設定」填入網址與密碼");
-  const ym=ymd(cur).slice(0,7);
+  const [a,b]=rpRange(),ms=monthsBetween(a,b);
+  if(ms.length>12)return tell("一次最多建立 12 個月的月表，請縮小期間");
   const note=syncOn()?"":"\n目前同步已關閉，開啟後才會執行。";
-  if(!await ask("要在 Google 試算表建立（或重建）「"+ym+"」工作表嗎？\n內容含摘要、支出／收入占比、圓餅圖與當月明細。"+note,{ok:"建立"}))return;
-  enqueue({op:"month",ym});
-  if(syncOn())tell("指令已送出，約需數秒。狀態列顯示「已同步」後，試算表就會出現「"+ym+"」工作表。");
+  const what=ms.length>1?ms.length+" 張月表（"+a+" ～ "+b+"）":"「"+a+"」工作表";
+  if(!await ask("要在 Google 試算表建立（或重建）"+what+"嗎？\n內容含摘要、支出／收入占比、圓餅圖與當月明細。"+note,{ok:"建立"}))return;
+  ms.forEach(ym=>enqueue({op:"month",ym}));
+  if(syncOn())tell("指令已送出，約需數秒。狀態列顯示「已同步」後，試算表就會出現對應的工作表。");
 };
 
 $("clearBtn").onclick=async()=>{
