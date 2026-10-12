@@ -48,6 +48,7 @@ dialog::backdrop{background:#0006}
 label{display:block;font-size:13px;color:var(--sub);margin:10px 0 4px}
 input,select{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);font:inherit}
 .seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg[hidden]{display:none}
 .seg button{flex:1;min-width:64px;padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
 .seg button.cu,.cats button.cu{border-color:var(--exp);color:var(--exp)}
 .seg button.ro,.cats button.ro{opacity:.4}
@@ -103,15 +104,23 @@ main .card{margin:5px 0}   /* flex 內外距不會合併，所以手機版各減
 .addbox input{flex:1;min-width:0}
 .addbox button{padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
 #tyAdd,#caAdd{background:var(--main);color:#fff;border-color:var(--main)}
-.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
-.chips span{padding:5px 10px;border:1px solid var(--line);border-radius:999px;background:var(--bg);font-size:14px}
+.chips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:6px 0}   /* 固定每列 3 個，不會因名稱長短而換行錯位 */
+.chips span{display:flex;align-items:center;min-width:0;padding:5px 8px;border:1px solid var(--line);border-radius:999px;background:var(--bg);font-size:14px}
+.chips .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-style:normal}
+.chips .nm.ci{color:var(--inc)}.chips .nm.ce{color:var(--exp)}
 .chips span.cu{border-color:var(--main)}
+.chips span[data-k]{cursor:grab;touch-action:none;user-select:none}
+.chips span.drag{opacity:.35}
+span.ghost{padding:5px 10px;border:1px solid var(--main);border-radius:999px;background:var(--card);font-size:14px;box-shadow:0 4px 14px #0004;opacity:.95;white-space:nowrap;cursor:grabbing}
+span.ghost button{display:none}
+.chips button{margin-left:2px}
 .chips button{border:0;background:none;color:var(--exp);padding:0 0 0 4px;font-size:13px}
 .lnk{background:none;border:0;color:var(--sub);font-size:13px;padding:0 0 8px}
 .seg button.on{background:var(--main);color:#fff;border-color:var(--main)}
 .cats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .cats button{padding:8px 0;border:1px solid var(--line);border-radius:8px;background:var(--bg);font-size:12px}
 .cats button.on{border-color:var(--main);outline:2px solid var(--main)}
+.cats button.ci{color:var(--inc)}.cats button.ce{color:var(--exp)}
 .row{display:flex;gap:8px;margin-top:16px}
 .row button{flex:1;padding:11px;border-radius:10px;border:1px solid var(--line);background:var(--bg)}
 .row .pri{background:var(--main);color:#fff;border-color:var(--main)}
@@ -231,7 +240,7 @@ main .card{margin:5px 0}   /* flex 內外距不會合併，所以手機版各減
     <div class="seg" id="typeSeg"></div>
     <label>帳目名稱</label><input id="nm" type="text" maxlength="40" placeholder="例如：午餐便當">
     <label>金額</label><input id="amt" type="number" inputmode="decimal" min="0" step="any" required>
-    <label>分類</label><div class="cats" id="cats"></div>
+    <label>分類（綠色為收入，紅色為支出）</label><div class="cats" id="cats"></div>
     <label>日期</label><input id="date" type="date" required>
     <label>備註</label><input id="note" type="text" maxlength="60">
     <div class="row">
@@ -259,18 +268,18 @@ main .card{margin:5px 0}   /* flex 內外距不會合併，所以手機版各減
 
 <dialog id="mgDlg">
   <b>管理類型與分類</b>
-  <label>類型（括號內為收支方向）</label>
+  <label>類型（分類的大群組，不分收支；「未分組」＝沒放進類型的分類，不能改名或刪除，空了會自動隱藏）</label>
   <div class="chips" id="mgTypes"></div>
   <div class="addbox">
-    <input id="tyName" type="text" maxlength="20" placeholder="新類型名稱，例如：儲蓄">
-    <select id="tySign" style="width:auto"><option value="-1">算支出</option><option value="1">算收入</option></select>
+    <input id="tyName" type="text" maxlength="20" placeholder="新類型名稱，例如：生活">
     <button type="button" id="tyAdd">新增</button>
   </div>
-  <label>分類（先選類型）</label>
+  <label>分類（先選類型；綠色為收入、紅色為支出；點 ✎ 可編輯名稱與方向）</label>
   <select id="mgType"></select>
   <div class="chips" id="mgCats"></div>
   <div class="addbox">
     <input id="caName" type="text" maxlength="20" placeholder="新分類名稱，例如：餐飲">
+    <select id="caSign" style="width:auto"><option value="-1">算支出</option><option value="1">算收入</option></select>
     <button type="button" id="caAdd">新增</button>
   </div>
   <label>批次搬移帳目（把某類型／分類的帳目改成另一個）</label>
@@ -282,6 +291,16 @@ main .card{margin:5px 0}   /* flex 內外距不會合併，所以手機版各減
   <div class="addbox"><small id="mvInfo" style="flex:1;align-self:center;color:var(--sub)"></small><button type="button" id="mvGo">搬移</button></div>
   <p style="font-size:12px;color:var(--sub)">只有自訂項目有 ✕ 可刪除；已有帳目使用的項目不能刪，可先用上方的批次搬移。</p>
   <div class="row"><button type="button" class="pri" id="mgClose">完成</button></div>
+</dialog>
+
+<dialog id="renDlg">
+  <form method="dialog" id="renForm">
+    <b id="renTitle"></b>
+    <input id="renIn" type="text" maxlength="20">
+    <div id="renSignBox" hidden><label>收支方向</label>
+      <select id="renSign"><option value="-1">支出</option><option value="1">收入</option></select></div>
+    <div class="row"><button type="button" id="renNo">取消</button><button type="submit" class="pri">確定</button></div>
+  </form>
 </dialog>
 
 <dialog id="syncDlg">
@@ -300,39 +319,122 @@ const KEY="ledger.v1";
 // 自訂類型 id = 正負號 + 名稱（如 "-儲蓄"），帳目本身也能辨識收支方向
 let cfg=lget("ledger.cfg",{types:[],cats:{}});
 // 設定與雲端「設定」工作表的轉換：每個類型／分類一列
-const cfgKey=i=>i.k==="type"?"t|"+i.id:"c|"+i.type+"|"+i.name;
-const cfgItems=()=>[
-  ...cfg.types.map(t=>({k:"type",id:t.id,name:t.name,sign:t.sign})),
-  ...Object.entries(cfg.cats).flatMap(([type,L])=>L.map(([,name])=>({k:"cat",type,name})))
-];
+// 順序（拖曳排序）：cfg.order = {types:[類型 id…], cats:{類型 id:[分類名稱…]}}，同步時各存成一列 kind="order"（name 欄放 JSON 清單）
+const cfgKey=i=>i.k==="type"?"t|"+i.id:i.k==="order"?"o|"+(i.type||""):"c|"+i.type+"|"+i.name;
+const cfgItems=()=>{
+  const o=cfg.order||{types:[],cats:{}};
+  return [
+    ...cfg.types.map(t=>({k:"type",id:t.id,name:t.name})),
+    ...Object.entries(cfg.cats).flatMap(([type,L])=>L.map(([,name])=>({k:"cat",type,name,sign:catSign(type,name)}))),
+    ...(o.types&&o.types.length?[{k:"order",type:"",name:JSON.stringify(o.types)}]:[]),
+    ...Object.entries(o.cats||{}).filter(([,L])=>L.length).map(([type,L])=>({k:"order",type,name:JSON.stringify(L)}))
+  ];
+};
 function cfgFromItems(items){
-  const c={types:[],cats:{}};
+  const c={types:[],cats:{},order:{types:[],cats:{}}};
   items.forEach(i=>{
-    if(i.k==="type")c.types.push({id:i.id,name:i.name,sign:+i.sign});
-    else(c.cats[i.type]=c.cats[i.type]||[]).push(["",i.name]);   // 分類只有文字，圖示欄固定留空
+    if(i.k==="type")c.types.push({id:i.id,name:i.name,sign:+i.sign||0});   // 類型沒有收支方向；舊版留下的 sign 只當新分類的預設
+    else if(i.k==="order"){
+      let L=[];try{L=JSON.parse(i.name)||[]}catch{}
+      if(i.type)c.order.cats[i.type]=L;else c.order.types=L;
+    }
+    else(c.cats[i.type]=c.cats[i.type]||[]).push(["",i.name,+i.sign===1||+i.sign===-1?+i.sign:0]);   // [圖示(固定空), 名稱, 收支方向]
   });
   return c;
 }
-const BASE=[{id:"exp",name:"支出",sign:-1},{id:"inc",name:"收入",sign:1}];
-function typeInfo(id){
-  const f=BASE.find(t=>t.id===id)||cfg.types.find(t=>t.id===id);
-  return f||{id,name:/^[+-]/.test(id)?id.slice(1):id,sign:id[0]==="+"?1:-1};
+const ordOf=()=>{const o=cfg.order||(cfg.order={types:[],cats:{}});o.cats=o.cats||{};o.types=o.types||[];return o};
+// 依儲存的順序排列；不在清單裡的排在後面，維持原本相對順序
+function sortBy(list,order,key){
+  if(!order||!order.length)return list;
+  const p=x=>{const i=order.indexOf(key(x));return i<0?1e9:i};
+  return list.map((x,n)=>[x,n]).sort((a,b)=>p(a[0])-p(b[0])||a[1]-b[1]).map(a=>a[0]);
 }
-const signOf=t=>typeInfo(t).sign;
+// 類型只是分類的大群組，不帶收支方向；收入、支出只在統計時依分類方向分出來。
+// 「未分組」是沒有放進任何自訂類型的分類與帳目所在的群組：不能改名、不能刪；
+// 有自訂類型後，只有它底下有分類或帳目時才顯示。舊版內建的 exp／inc 兩個群組會自動併進來（migrateLegacy）。
+const NOGROUP="未分組";
+const legacyGroup=t=>t==="exp"||t==="inc";
+function typeInfo(id){
+  if(id===NOGROUP)return {id,name:NOGROUP};
+  const f=cfg.types.find(t=>t.id===id);
+  return f||{id,name:/^[+-]/.test(id)?id.slice(1):id};
+}
+// 收支方向綁在「分類」上，每筆帳目存自己的 sign（+1 收入／-1 支出），之後改分類的方向不會翻動舊帳目。
+// 舊帳目沒有 sign 時由類型推出：inc 或 "+" 開頭是收入，其餘是支出（也是新分類的預設方向）。
+const typeDefSign=id=>{const t=cfg.types.find(x=>x.id===id);return t&&(t.sign===1||t.sign===-1)?t.sign:(id==="inc"||id[0]==="+"?1:-1)};
+const sgn=r=>r.sign===1||r.sign===-1?r.sign:typeDefSign(r.type);
+const fixSigns=(arr,old)=>arr.map(r=>r.sign===1||r.sign===-1?r:{...r,sign:(old&&old.get(r.id))||typeDefSign(r.type)});
 function allTypes(){
-  const L=[...BASE,...cfg.types];
-  data.forEach(r=>{if(!L.some(t=>t.id===r.type))L.push(typeInfo(r.type))});
-  return L;
+  const L=[...cfg.types];
+  data.forEach(r=>{if(r.type!==NOGROUP&&!L.some(t=>t.id===r.type))L.push(typeInfo(r.type))});
+  // 未分組：有分類或帳目時才列出；完全沒有自訂類型時一定列出（否則沒地方放分類）
+  const used=(cfg.cats[NOGROUP]||[]).length||data.some(r=>r.type===NOGROUP);
+  if(used||!L.length)L.unshift(typeInfo(NOGROUP));
+  return sortBy(L,ordOf().types,t=>t.id);
+}
+const defType=()=>allTypes()[0].id;
+// 舊版內建的 exp（支出）／inc（收入）群組併入「未分組」：帳目的類型改成「未分組」（收支方向先用舊規則存進 sign），
+// 這兩個群組底下的自訂分類與順序也搬過去；兩邊有同名分類時，收入那邊加上「（收入）」以免混在一起。
+// 回傳 {rows, ops}：ops 是要同步到試算表的變更（設定列與被改到的帳目），沒有舊資料時是空的。
+function migrateLegacy(rows){
+  const names={exp:new Set(),inc:new Set()};
+  rows.forEach(r=>{if(legacyGroup(r.type))names[r.type].add(r.cat)});
+  ["exp","inc"].forEach(g=>(cfg.cats[g]||[]).forEach(c=>names[g].add(c[1])));
+  const nm=(g,n)=>g==="inc"&&names.exp.has(n)&&names.inc.has(n)?n+"（收入）":n;
+  const ops=[];
+  const out=rows.map(r=>{
+    if(!legacyGroup(r.type))return r;
+    const n={...r,type:NOGROUP,cat:nm(r.type,r.cat),sign:r.sign===1||r.sign===-1?r.sign:(r.type==="inc"?1:-1)};
+    ops.push({op:"set",rec:n});
+    return n;
+  });
+  const cfgOps=[];
+  ["exp","inc"].forEach(g=>{
+    const L=cfg.cats[g];if(!L)return;
+    const dst=cfg.cats[NOGROUP]=cfg.cats[NOGROUP]||[];
+    L.forEach(c=>{
+      const name=nm(g,c[1]),sign=c[2]===1||c[2]===-1?c[2]:(g==="inc"?1:-1);
+      cfgOps.push({op:"cdel",item:{k:"cat",type:g,name:c[1]}});
+      if(!dst.some(x=>x[1]===name))dst.push(["",name,sign]);
+      cfgOps.push({op:"cset",item:{k:"cat",type:NOGROUP,name,sign}});
+    });
+    delete cfg.cats[g];
+  });
+  const od=ordOf();
+  ["exp","inc"].forEach(g=>{
+    if(!od.cats[g])return;
+    const merged=[...(od.cats[NOGROUP]||[]),...od.cats[g].map(n=>nm(g,n))];
+    od.cats[NOGROUP]=[...new Set(merged)];delete od.cats[g];
+    cfgOps.push({op:"cdel",item:{k:"order",type:g}},{op:"cset",item:{k:"order",type:NOGROUP,name:JSON.stringify(od.cats[NOGROUP])}});
+  });
+  if(od.types.some(legacyGroup)){
+    od.types=[...new Set(od.types.map(x=>legacyGroup(x)?NOGROUP:x))];
+    cfgOps.push({op:"cset",item:{k:"order",type:"",name:JSON.stringify(od.types)}});
+  }
+  if(cfgOps.length)lset("ledger.cfg",cfg);
+  return {rows:out,ops:[...cfgOps,...ops]};
+}
+// 分類的收支方向：自訂分類設定 → 該分類帳目的方向 → 類型的預設方向
+function catSign(t,name){
+  const c=(cfg.cats[t]||[]).find(x=>x[1]===name);
+  if(c&&(c[2]===1||c[2]===-1))return c[2];
+  const r=data.find(x=>x.type===t&&x.cat===name);
+  if(r)return sgn(r);
+  return name==="其他收入"?1:typeDefSign(t);   // 「其他收入」是沒有任何分類時的預設選項
 }
 // 自訂分類 + 帳目裡出現過的分類（舊帳目用過的分類仍可辨識）；完全沒有時給「未分類」
-// 分類只有文字：項目格式維持 [圖示, 名稱]，圖示固定留空（相容舊資料）
-function catsOf(t){
-  const L=[...(cfg.cats[t]||[])];
-  data.forEach(r=>{if(r.type===t&&!L.some(x=>x[1]===r.cat))L.push(["",r.cat])});
-  return L.length?L:[["","未分類"]];
+// 項目格式 [圖示(固定空), 名稱, 收支方向]
+function catsOf(t,noDefaults){
+  const L=(cfg.cats[t]||[]).map(x=>["",x[1],catSign(t,x[1])]);
+  data.forEach(r=>{if(r.type===t&&!L.some(x=>x[1]===r.cat))L.push(["",r.cat,sgn(r)])});
+  if(noDefaults)return sortBy(L,ordOf().cats[t],x=>x[1]);   // 管理視窗只列真正存在的分類（設定裡的＋帳目用到的）
+  // 「其他支出」「其他收入」是每個類型都固定有的基本選項（不是存起來的分類），排在自己的分類後面；
+  // 已有同名的分類就用該分類
+  [["","其他支出",-1],["","其他收入",1]].forEach(d=>{if(!L.some(x=>x[1]===d[1]))L.push(d)});
+  return sortBy(L,ordOf().cats[t],x=>x[1]);
 }
-let data=load(), cur=new Date(); cur.setDate(1);
-let edit=null, type="exp", cat="";
+let data=fixSigns(load()), cur=new Date(); cur.setDate(1);
+let edit=null, type=NOGROUP, cat="";
 const $=id=>document.getElementById(id);
 
 // 頁面內的確認／提示視窗：取代 confirm()/alert()，避免被瀏覽器或 PWA 擋掉而沒反應
@@ -385,8 +487,10 @@ async function flush(){
   if(busy){again=true;return}
   busy=true;again=false;status("☁️ 同步中…");
   try{
-    if(queue.length){
-      const ops=queue.slice();
+    // 變更分批送出（每批最多 40 個，送成功才從佇列移除）：一次送太多會超過 Apps Script 的執行時間上限而一直重試
+    while(queue.length){
+      const ops=queue.slice(0,40);
+      status("☁️ 同步中…（剩 "+queue.length+" 項）");
       const j=await api(sync.url,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({token:sync.token,ops})},"寫入");
       if(!j.ok)throw new Error(j.error);
       queue=queue.slice(ops.length);lset("ledger.queue",queue);
@@ -394,7 +498,19 @@ async function flush(){
     const j=await api(sync.url+"?token="+encodeURIComponent(sync.token),undefined,"讀取");
     if(!j.ok)throw new Error(j.error);
     if(!queue.length){
-      data=j.rows;save();
+      oldBackend=j.rows.length>0&&j.rows.some(r=>r.sign===undefined);   // 舊版後端不存收支方向
+      data=fixSigns(j.rows,new Map(data.map(r=>[r.id,r.sign])));
+      // 試算表裡有 id 重複的列（舊版同一毫秒建立多筆造成）：同步是依 id 覆蓋，重複的列永遠改不到，
+      // 會讓同步一直重送。第一筆保留原 id，其餘換新 id，並在雲端刪掉多出的重複列、補寫新 id 的帳目
+      const seen=new Set(),dupOps=[];
+      let maxId=data.reduce((m,r)=>Math.max(m,r.id||0),0);
+      data=data.map(r=>{
+        if(!seen.has(r.id)){seen.add(r.id);return r}
+        const n={...r,id:++maxId};
+        dupOps.push({op:"del",id:r.id},{op:"set",rec:n});
+        return n;
+      });
+      save();
       if(Array.isArray(j.cfg)){   // 舊版後端沒有 cfg 就略過
         if(!lget("ledger.cfgSynced",false)){
           // 第一次與這份試算表同步設定：把本機既有的自訂項目併入並上傳，避免被空的雲端設定蓋掉
@@ -405,9 +521,44 @@ async function flush(){
         }
         cfg=cfgFromItems(j.cfg);lset("ledger.cfg",cfg);
       }
+      // 雲端還留著舊版內建群組（exp／inc）時，併進「未分組」並把變更送回去（送完後雲端就沒有舊資料了）
+      const m=migrateLegacy(data);
+      // 保險：同一批舊資料轉換變更連續出現（代表雲端沒能存下）就不再重送，避免一直同步
+      const sig=JSON.stringify(m.ops);
+      migRepeat=m.ops.length&&sig===lastMig?migRepeat+1:0;lastMig=m.ops.length?sig:"";
+      if(m.ops.length){data=m.rows;save()}
+      if(m.ops.length&&migRepeat<2)queue.push(...m.ops);
+      if(dupOps.length&&!dupSent){queue.push(...dupOps);dupSent=true}
+      // 設定裡還沒有收支方向的舊分類：補上推導出來的方向（帳目的方向，否則類型預設），並寫回雲端（每次開啟只送一次）
+      const fill=[];
+      Object.entries(cfg.cats).forEach(([t,L])=>L.forEach(c=>{
+        if(c[2]===1||c[2]===-1)return;
+        c[2]=catSign(t,c[1]);
+        fill.push({op:"cset",item:{k:"cat",type:t,name:c[1],sign:c[2]}});
+      }));
+      if(fill.length){lset("ledger.cfg",cfg);if(!signFilled){queue.push(...fill);signFilled=true}}
+      // 舊設定清理（升級後第一次同步，每次開啟只送一次）：
+      // ① 類型列殘留的收支方向（舊版方向綁類型時寫的，現在方向在分類與帳目上）清成空白；
+      // ② 已經不存在的類型留下的分類與順序（沒有任何帳目使用）一併刪除。
+      // 雲端是舊版後端（帳目沒有 sign）時不清，避免舊帳目失去推導依據。
+      const clean=[];
+      if(!oldBackend&&!cleanDone){
+        cfg.types.forEach(t=>{
+          if(t.sign===1||t.sign===-1){t.sign=0;clean.push({op:"cset",item:{k:"type",id:t.id,name:t.name}})}
+        });
+        Object.keys(cfg.cats).forEach(t=>{
+          if(t===NOGROUP||cfg.types.some(x=>x.id===t)||data.some(r=>r.type===t))return;
+          cfg.cats[t].forEach(c=>clean.push({op:"cdel",item:{k:"cat",type:t,name:c[1]}}));
+          delete cfg.cats[t];
+          if(ordOf().cats[t]){delete ordOf().cats[t];clean.push({op:"cdel",item:{k:"order",type:t}})}
+        });
+        if(clean.length){lset("ledger.cfg",cfg);queue.push(...clean)}
+        cleanDone=true;
+      }
+      if(m.ops.length||dupOps.length||fill.length||clean.length)lset("ledger.queue",queue);
       render();
     }
-    status("☁️ 已同步 "+new Date().toLocaleTimeString());
+    status("☁️ 已同步 "+new Date().toLocaleTimeString()+(oldBackend?"（⚠ 後端是舊版，收支方向存不進試算表，請更新 apps-script.gs 並部署新版本）":""));
   }catch(e){
     const why=e.message==="token"?"密碼錯誤"
       :e.notJson?e.message
@@ -418,7 +569,7 @@ async function flush(){
   busy=false;
   if(again||queue.length&&!/失敗/.test($("syncStatus").textContent))flush();
 }
-let again=false;
+let again=false,oldBackend=false,migRepeat=0,lastMig="",dupSent=false,signFilled=false,cleanDone=false;
 const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 const fmt=n=>Math.round(n*100)/100;
 const esc=s=>s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -467,7 +618,7 @@ function render(){
     .sort((a,b)=>b.date.localeCompare(a.date)||(b.time||"").localeCompare(a.time||"")||b.id-a.id);
   let inc=0,exp=0,by={};
   rows.forEach(r=>{
-    if(signOf(r.type)>0)inc+=r.amount;
+    if(sgn(r)>0)inc+=r.amount;
     else{exp+=r.amount;const b=by[r.cat]||(by[r.cat]={v:0,t:r.type});b.v+=r.amount}
   });
   $("sInc").textContent=fmt(inc);$("sExp").textContent=fmt(exp);$("sBal").textContent=fmt(inc-exp);
@@ -483,7 +634,7 @@ function render(){
     // 日期直接放在每筆裡（篩選跨年時顯示完整年月日）
     const w="日一二三四五六"[new Date(r.date+"T00:00").getDay()];
     const when=(on?r.date:r.date.slice(5).replace("-","/"))+" 週"+w+(r.time?" "+r.time:"");
-    html+=`<div class="item" data-id="${r.id}"><div class="top"><div class="m">${esc(r.name||r.cat)}<small>${when} · ${esc(r.cat)}${r.note?" · "+esc(r.note):""}</small></div><b class="${signOf(r.type)>0?"inc":"exp"}">${signOf(r.type)>0?"+":"-"}${fmt(r.amount)}</b></div><div class="act"><button type="button" data-edit="${r.id}">編輯</button><button type="button" class="d" data-del="${r.id}">刪除</button></div></div>`;
+    html+=`<div class="item" data-id="${r.id}"><div class="top"><div class="m">${esc(r.name||r.cat)}<small>${when} · ${esc(r.cat)}${r.note?" · "+esc(r.note):""}</small></div><b class="${sgn(r)>0?"inc":"exp"}">${sgn(r)>0?"+":"-"}${fmt(r.amount)}</b></div><div class="act"><button type="button" data-edit="${r.id}">編輯</button><button type="button" class="d" data-del="${r.id}">刪除</button></div></div>`;
   }
   $("list").innerHTML=html;
 }
@@ -494,10 +645,11 @@ const isCustomCat=(t,n)=>(cfg.cats[t]||[]).some(x=>x[1]===n);
 
 // 新增帳目視窗：只負責選類型與分類
 function drawTypes(){
+  $("typeSeg").hidden=allTypes().length<2;   // 只有一個群組（還沒建立自訂類型）就不顯示類型按鈕，直接選分類
   $("typeSeg").innerHTML=allTypes().map(t=>`<button type="button" data-t="${esc(t.id)}" class="${t.id===type?"on":""}">${esc(t.name)}</button>`).join("");
 }
 function drawCats(){
-  $("cats").innerHTML=catsOf(type).map(([,n])=>`<button type="button" data-c="${esc(n)}" class="${n===cat?"on":""}">${esc(n)}</button>`).join("")
+  $("cats").innerHTML=catsOf(type).map(([,n,s])=>`<button type="button" data-c="${esc(n)}" class="${n===cat?"on ":""}${s>0?"ci":"ce"}">${esc(n)}</button>`).join("")
     +((cfg.cats[type]||[]).length?"":'<div style="grid-column:1/-1;font-size:12px;color:var(--sub)">尚未建立分類，可到頁面下方「🏷 管理類型與分類」新增</div>');
 }
 function setType(t){
@@ -507,13 +659,13 @@ function setType(t){
 }
 
 // 「管理類型與分類」視窗：新增、刪除自訂項目（內建與帳目裡出現過的項目不可刪）
-let mgType="exp";
+let mgType=NOGROUP;
 // 批次搬移：來源（類型＋分類，分類空白＝全部）→ 目的（類型＋分類，分類空白＝沿用原分類名稱）
-let mv={ft:"exp",fc:"",tt:"exp",tc:""};
+let mv={ft:NOGROUP,fc:"",tt:NOGROUP,tc:""};
 function drawMv(){
   const ts=allTypes();
-  if(!ts.some(t=>t.id===mv.ft))mv.ft="exp";
-  if(!ts.some(t=>t.id===mv.tt))mv.tt="exp";
+  if(!ts.some(t=>t.id===mv.ft))mv.ft=ts[0].id;
+  if(!ts.some(t=>t.id===mv.tt))mv.tt=ts[0].id;
   if(mv.fc&&!catsOf(mv.ft).some(c=>c[1]===mv.fc))mv.fc="";
   if(mv.tc&&!catsOf(mv.tt).some(c=>c[1]===mv.tc))mv.tc="";
   const opt=(arr,sel)=>arr.map(([v,t])=>`<option value="${esc(v)}"${v===sel?" selected":""}>${esc(t)}</option>`).join("");
@@ -528,38 +680,184 @@ async function moveRecs(){
   const m=data.filter(r=>r.type===mv.ft&&(!mv.fc||r.cat===mv.fc));
   if(!m.length)return tell("沒有符合的帳目");
   if(mv.ft===mv.tt&&(!mv.tc||(mv.fc&&mv.tc===mv.fc)))return tell("來源與目的相同，不需要搬移");
-  const a=typeInfo(mv.ft),b=typeInfo(mv.tt);
-  const warn=a.sign!==b.sign?"\n注意：收支方向會從「"+(a.sign>0?"收入":"支出")+"」變成「"+(b.sign>0?"收入":"支出")+"」，統計會跟著改變。":"";
-  const to=b.name+" / "+(mv.tc||"沿用原分類");
+  // 收支方向：指定了目的分類就跟著該分類；沿用原分類名稱時保留每筆原本的方向
+  // 沿用原名稱時，如果目的類型已有同名分類，就跟著那個分類的方向（避免同一分類裡混著兩種方向）
+  const hasCat=n=>(cfg.cats[mv.tt]||[]).some(x=>x[1]===n)||data.some(x=>x.type===mv.tt&&x.cat===n);
+  const newSign=r=>mv.tc?catSign(mv.tt,mv.tc):hasCat(r.cat)?catSign(mv.tt,r.cat):sgn(r);
+  const flip=m.filter(r=>newSign(r)!==sgn(r)).length;
+  const warn=flip?"\n注意："+flip+" 筆的收支方向會改變（依目的分類"+(mv.tc?"「"+mv.tc+"」":"的同名分類")+"），統計會跟著改變。":"";
+  const to=typeInfo(mv.tt).name+" / "+(mv.tc||"沿用原分類");
   if(!await ask("把 "+m.length+" 筆帳目搬到「"+to+"」？"+warn,{ok:"搬移"}))return;
   const ids=new Set(m.map(r=>r.id)),recs=[];
   data=data.map(r=>{
     if(!ids.has(r.id))return r;
-    const n={...r,type:mv.tt,cat:mv.tc||r.cat};recs.push(n);return n;
+    const n={...r,type:mv.tt,cat:mv.tc||r.cat,sign:newSign(r)};recs.push(n);return n;
   });
-  // 目的類型補上被搬過去的分類（自訂分類，之後可管理、會同步）
-  const names=[...new Set(recs.map(r=>r.cat))].filter(n=>n!=="未分類"&&!(cfg.cats[mv.tt]||[]).some(x=>x[1]===n));
-  names.forEach(name=>{(cfg.cats[mv.tt]=cfg.cats[mv.tt]||[]).push(["",name]);enqueue({op:"cset",item:{k:"cat",type:mv.tt,name}})});
-  if(names.length)lset("ledger.cfg",cfg);
+  // 目的類型補上被搬過去的分類（自訂分類，之後可管理、會同步），方向沿用搬過去的帳目
+  const isDef=n=>n==="其他支出"||n==="其他收入";   // 預設選項不用存成分類設定
+  const names=[...new Set(recs.map(r=>r.cat))].filter(n=>n!=="未分類"&&!isDef(n)&&!(cfg.cats[mv.tt]||[]).some(x=>x[1]===n));
+  const ops=[];
+  names.forEach(name=>{
+    const sign=sgn(recs.find(r=>r.cat===name));
+    (cfg.cats[mv.tt]=cfg.cats[mv.tt]||[]).push(["",name,sign]);
+    ops.push({op:"cset",item:{k:"cat",type:mv.tt,name,sign}});
+  });
+  // 來源類型：帳目搬空的分類不自動刪除，改成存成分類設定留在原處（變成空分類），
+  // 讓使用者自己確認後到管理視窗刪除；否則只靠帳目推出來的分類會在搬完後悄悄消失
+  [...new Set(m.map(r=>r.cat))].forEach(n=>{
+    if(isDef(n)||data.some(r=>r.type===mv.ft&&r.cat===n))return;   // 預設選項、或還有帳目在用，不用處理
+    const L=cfg.cats[mv.ft]=cfg.cats[mv.ft]||[];
+    if(L.some(x=>x[1]===n))return;
+    const sign=sgn(m.find(r=>r.cat===n));
+    L.push(["",n,sign]);
+    ops.push({op:"cset",item:{k:"cat",type:mv.ft,name:n,sign}});
+  });
+  lset("ledger.cfg",cfg);
   save();
-  if(sync){recs.forEach(rec=>queue.push({op:"set",rec}));lset("ledger.queue",queue);if(syncOn())flush()}
+  pushOps([...ops,...recs.map(rec=>({op:"set",rec}))]);
   mv.fc="";drawMg();render();
   tell("已搬移 "+recs.length+" 筆帳目。");
 }
 function drawMg(){
   drawMv();
   const ts=allTypes();
-  if(!ts.some(t=>t.id===mgType))mgType="exp";
+  if(!ts.some(t=>t.id===mgType))mgType=ts[0].id;
+  // 晶片可拖曳排序（data-k 是排序用的鍵）；自訂類型可改名／刪除，分類可改名／切換方向（自訂的才能刪）
   $("mgTypes").innerHTML=ts.map(t=>{
     const cu=isCustomType(t.id);
-    return `<span class="${cu?"cu":""}">${esc(t.name)} (${t.sign>0?"+":"−"})${cu?` <button type="button" data-dt="${esc(t.id)}" title="刪除">✕</button>`:""}</span>`;
+    return `<span data-k="${esc(t.id)}" class="${cu?"cu":""}"><i class="nm" title="${esc(t.name)}">${esc(t.name)}</i>${cu?` <button type="button" data-rt="${esc(t.id)}" title="重新命名">✎</button><button type="button" data-dt="${esc(t.id)}" title="刪除">✕</button>`:""}</span>`;
   }).join("");
   $("mgType").innerHTML=ts.map(t=>`<option value="${esc(t.id)}">${esc(t.name)}</option>`).join("");
   $("mgType").value=mgType;
-  $("mgCats").innerHTML=catsOf(mgType).map(([e,n])=>{
+  // 只列真正存在的分類；「其他支出／其他收入」只是記帳時的預設選項，不是分類，不在這裡出現
+  const mine=catsOf(mgType,true);
+  $("mgCats").innerHTML=mine.map(([e,n,s])=>{
     const cu=isCustomCat(mgType,n);
-    return `<span class="${cu?"cu":""}">${esc(n)}${cu?` <button type="button" data-dc="${esc(n)}" title="刪除">✕</button>`:""}</span>`;
-  }).join("");
+    const btn=` <button type="button" data-rc="${esc(n)}" title="編輯名稱與收支方向">✎</button>`
+      +(cu?`<button type="button" data-dc="${esc(n)}" title="刪除">✕</button>`:"");
+    return `<span data-k="${esc(n)}" class="${cu?"cu":""}"><i class="nm ${s>0?"ci":"ce"}" title="${esc(n)}（${s>0?"收入":"支出"}）">${esc(n)}</i>${btn}</span>`;
+  }).join("")+(mine.length?"":'<div style="grid-column:1/-1;font-size:12px;color:var(--sub)">這個類型還沒有分類（記帳時會有「其他支出」「其他收入」預設選項）</div>');
+  $("caSign").value=String(typeDefSign(mgType));
+}
+// 把一批變更排進同步佇列（只 flush 一次）
+function pushOps(ops){
+  if(!sync||!ops.length)return;
+  queue.push(...ops);lset("ledger.queue",queue);
+  if(syncOn())flush();
+}
+// 頁面內的編輯視窗（取代 prompt）：名稱，sign 有給時多一個收支方向選單；回傳 {name,sign}，取消回傳 null
+function askText(title,value,sign){
+  return new Promise(res=>{
+    $("renTitle").textContent=title;$("renIn").value=value;
+    $("renSignBox").hidden=sign===undefined;
+    if(sign!==undefined)$("renSign").value=String(sign);
+    const done=v=>{$("renForm").onsubmit=$("renNo").onclick=$("renDlg").oncancel=null;$("renDlg").close();res(v)};
+    $("renForm").onsubmit=e=>{e.preventDefault();done({name:$("renIn").value.trim(),sign:+$("renSign").value})};
+    $("renNo").onclick=()=>done(null);
+    $("renDlg").oncancel=e=>{e.preventDefault();done(null)};
+    $("renDlg").showModal();$("renIn").focus();
+  });
+}
+// 編輯分類（名稱、收支方向）：改名時該類型下所有相關帳目一併改名；改方向時詢問要不要一併改已有的帳目。
+// 設定與每筆受影響的帳目都會同步
+async function editCat(t,old){
+  const oldSign=catSign(t,old);
+  const r=await askText("編輯分類「"+old+"」",old,oldSign);
+  if(r===null)return;
+  const nn=r.name,ns=r.sign;
+  if(!nn)return tell("名稱不能空白");
+  if(nn===old&&ns===oldSign)return;
+  if(nn!==old&&catsOf(t).some(x=>x[1]===nn))return tell("這個類型已有同名分類，要合併請用上方的「批次搬移」");
+  const mine=data.filter(x=>x.type===t&&x.cat===old);
+  // 改方向：已有帳目要不要一起改（不改的話只影響之後新增的帳目）
+  let flipOld=false;
+  if(ns!==oldSign&&mine.length)flipOld=await ask("「"+old+"」已有 "+mine.length+" 筆帳目。\n要把它們也改成"+(ns>0?"收入":"支出")+"嗎？\n（選「只改之後」則舊帳目維持原本方向）",{ok:"一併改",no:"只改之後"});
+  const L=cfg.cats[t]=cfg.cats[t]||[],c=L.find(x=>x[1]===old);
+  if(c){c[1]=nn;c[2]=ns}else L.push(["",nn,ns]);
+  const recs=[];
+  data=data.map(x=>{
+    if(!(x.type===t&&x.cat===old))return x;
+    const n={...x,cat:nn,sign:flipOld?ns:sgn(x)};
+    if(n.cat!==x.cat||n.sign!==x.sign)recs.push(n);
+    return n;
+  });
+  const ops=[];
+  if(nn!==old)ops.push({op:"cdel",item:{k:"cat",type:t,name:old}});
+  ops.push({op:"cset",item:{k:"cat",type:t,name:nn,sign:ns}});
+  const od=ordOf().cats[t];
+  if(nn!==old&&od){const i=od.indexOf(old);if(i>=0){od[i]=nn;ops.push({op:"cset",item:{k:"order",type:t,name:JSON.stringify(od)}})}}
+  lset("ledger.cfg",cfg);save();
+  pushOps([...ops,...recs.map(rec=>({op:"set",rec}))]);
+  drawMg();render();
+}
+// 重新命名類型：類型 id 就是名稱，所以該類型的分類與所有帳目一併換成新名稱，並同步
+async function renameType(id){
+  const t=cfg.types.find(x=>x.id===id);if(!t)return;
+  const rr=await askText("重新命名類型「"+t.name+"」",t.name);
+  const nn=rr&&rr.name;
+  if(rr===null||nn===t.name)return;
+  if(!nn)return tell("名稱不能空白");
+  if(allTypes().some(x=>x.id===nn||x.name===nn)||nn===NOGROUP||legacyGroup(nn))return tell("已有同名的類型");
+  const oldCats=cfg.cats[id]||[],od=ordOf(),ops=[];
+  oldCats.forEach(([,n])=>ops.push({op:"cdel",item:{k:"cat",type:id,name:n}}));
+  ops.push({op:"cdel",item:{k:"type",id}});
+  if(od.cats[id])ops.push({op:"cdel",item:{k:"order",type:id}});
+  t.id=nn;t.name=nn;   // 舊版留下的 sign 欄保留，只當新分類的預設方向
+  if(oldCats.length){cfg.cats[nn]=oldCats;delete cfg.cats[id]}
+  od.types=od.types.map(x=>x===id?nn:x);
+  if(od.cats[id]){od.cats[nn]=od.cats[id];delete od.cats[id]}
+  const recs=[];
+  data=data.map(r=>{if(r.type!==id)return r;const n={...r,type:nn};recs.push(n);return n});
+  if(mgType===id)mgType=nn;
+  if(mv.ft===id)mv.ft=nn;
+  if(mv.tt===id)mv.tt=nn;
+  ops.push({op:"cset",item:{k:"type",id:nn,name:nn}});
+  (cfg.cats[nn]||[]).forEach(([,n])=>ops.push({op:"cset",item:{k:"cat",type:nn,name:n,sign:catSign(nn,n)}}));
+  if(od.types.length)ops.push({op:"cset",item:{k:"order",type:"",name:JSON.stringify(od.types)}});
+  if(od.cats[nn])ops.push({op:"cset",item:{k:"order",type:nn,name:JSON.stringify(od.cats[nn])}});
+  lset("ledger.cfg",cfg);save();
+  pushOps([...ops,...recs.map(rec=>({op:"set",rec}))]);
+  drawMg();render();
+}
+// 拖曳排序：按住晶片（不含上面的按鈕）移動到想要的位置放開；滑鼠與觸控都可用。放開後呼叫 onDone(新順序的鍵清單)
+function sortable(box,onDone){
+  box.addEventListener("pointerdown",e=>{
+    const chip=e.target.closest("[data-k]");
+    if(!chip||e.target.closest("button")||!box.contains(chip))return;
+    const keys=()=>[...box.querySelectorAll("[data-k]")].map(x=>x.dataset.k);
+    const before=keys().join("\u0001"),sx=e.clientX,sy=e.clientY;
+    let moved=false,ghost=null;
+    const rect=chip.getBoundingClientRect(),ox=sx-rect.left,oy=sy-rect.top;
+    // move／up 掛在 document 上：重新排列時晶片會被移動位置，掛在晶片上的事件會因此中斷
+    const move=ev=>{
+      if(ev.pointerId!==e.pointerId)return;
+      if(!moved&&Math.hypot(ev.clientX-sx,ev.clientY-sy)<4)return;
+      if(!moved){
+        moved=true;chip.classList.add("drag");
+        // 跟著游標走的半透明複本；原位置的晶片留作「放開後會在這裡」的預覽
+        ghost=chip.cloneNode(true);
+        ghost.className="ghost";ghost.style.cssText="position:fixed;z-index:99;pointer-events:none;margin:0;width:"+rect.width+"px";
+        (box.closest("dialog")||document.body).appendChild(ghost);   // 放在視窗（dialog）裡才會顯示在它上面
+      }
+      ghost.style.left=(ev.clientX-ox)+"px";ghost.style.top=(ev.clientY-oy)+"px";
+      // 游標一碰到別的晶片就交換位置（不用拉過一半）
+      const over=document.elementFromPoint(ev.clientX,ev.clientY);
+      const t=over&&over.closest&&over.closest("[data-k]");
+      if(t&&t!==chip&&box.contains(t)){
+        const after=chip.compareDocumentPosition(t)&Node.DOCUMENT_POSITION_FOLLOWING;
+        box.insertBefore(chip,after?t.nextSibling:t);
+      }
+    };
+    const up=ev=>{
+      if(ev.pointerId!==e.pointerId)return;
+      document.removeEventListener("pointermove",move);document.removeEventListener("pointerup",up);document.removeEventListener("pointercancel",up);
+      chip.classList.remove("drag");
+      if(ghost)ghost.remove();
+      if(moved&&keys().join("\u0001")!==before)onDone(keys());
+      else if(moved)drawMg();   // 放回原位：還原畫面
+    };
+    document.addEventListener("pointermove",move);document.addEventListener("pointerup",up);document.addEventListener("pointercancel",up);
+  });
 }
 async function delType(id){
   const n=data.filter(r=>r.type===id).length;
@@ -582,25 +880,26 @@ function addTypeFromInput(){
   const name=$("tyName").value.trim();
   if(!name)return $("tyName").focus();
   if(allTypes().some(t=>t.name===name))return tell("已有同名的類型");
-  const sign=+$("tySign").value;
-  const t={id:(sign>0?"+":"-")+name,name,sign};
+  if(name===NOGROUP||legacyGroup(name)||allTypes().some(t=>t.id===name))return tell("這個名稱不能用，請換一個");
+  const t={id:name,name};   // 類型沒有收支方向，id 就是名稱
   cfg.types.push(t);lset("ledger.cfg",cfg);
-  enqueue({op:"cset",item:{k:"type",id:t.id,name:t.name,sign:t.sign}});
+  enqueue({op:"cset",item:{k:"type",id:t.id,name:t.name}});
   $("tyName").value="";mgType=t.id;drawMg();
 }
 function addCatFromInput(){
   const s=$("caName").value.trim();
   const name=s;
   if(!name)return $("caName").focus();
-  if(catsOf(mgType).some(x=>x[1]===name))return tell("這個類型已有同名的分類");
-  (cfg.cats[mgType]=cfg.cats[mgType]||[]).push(["",name]);lset("ledger.cfg",cfg);
-  enqueue({op:"cset",item:{k:"cat",type:mgType,name}});
+  if(catsOf(mgType,true).some(x=>x[1]===name))return tell("這個類型已有同名的分類");
+  const sign=+$("caSign").value;
+  (cfg.cats[mgType]=cfg.cats[mgType]||[]).push(["",name,sign]);lset("ledger.cfg",cfg);
+  enqueue({op:"cset",item:{k:"cat",type:mgType,name,sign}});
   $("caName").value="";drawMg();
 }
 function openDlg(r){
   edit=r||null;
   cat=r?r.cat:"";
-  setType(r?r.type:"exp");
+  setType(r?r.type:(allTypes().some(t=>t.id===type)?type:defType()));   // 新增時沿用上次選的類型
   $("nm").value=r?r.name||"":"";
   $("amt").value=r?r.amount:"";
   $("date").value=r?r.date:ymd(new Date());
@@ -616,12 +915,30 @@ $("typeSeg").onclick=e=>{const b=e.target.closest("button");if(b)setType(b.datas
 $("cats").onclick=e=>{const b=e.target.closest("button");if(b){cat=b.dataset.c;drawCats()}};
 
 // 管理類型與分類視窗
-$("mgBtn").onclick=()=>{mgType="exp";drawMg();$("mgDlg").showModal()};
+$("mgBtn").onclick=()=>{mgType=defType();drawMg();$("mgDlg").showModal()};
 $("mgClose").onclick=()=>$("mgDlg").close();
 $("mgDlg").addEventListener("close",render);   // 關閉後更新篩選選單
 $("mgType").onchange=()=>{mgType=$("mgType").value;drawMg()};
-$("mgTypes").onclick=e=>{const b=e.target.closest("button");if(b)delType(b.dataset.dt)};
-$("mgCats").onclick=e=>{const b=e.target.closest("button");if(b)delCat(mgType,b.dataset.dc)};
+$("mgTypes").onclick=e=>{
+  const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.rt!==undefined)renameType(b.dataset.rt);else delType(b.dataset.dt);
+};
+$("mgCats").onclick=e=>{
+  const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.rc!==undefined)editCat(mgType,b.dataset.rc);
+  else delCat(mgType,b.dataset.dc);
+};
+// 拖曳改變順序：新順序存在 cfg.order，並同步到試算表「設定」；新增帳目的類型／分類按鈕、篩選選單都依這個順序
+sortable($("mgTypes"),keys=>{
+  ordOf().types=keys;lset("ledger.cfg",cfg);
+  pushOps([{op:"cset",item:{k:"order",type:"",name:JSON.stringify(keys)}}]);
+  drawMg();
+});
+sortable($("mgCats"),keys=>{
+  ordOf().cats[mgType]=keys;lset("ledger.cfg",cfg);
+  pushOps([{op:"cset",item:{k:"order",type:mgType,name:JSON.stringify(keys)}}]);
+  drawMg();
+});
 $("mvFromType").onchange=()=>{mv.ft=$("mvFromType").value;mv.fc="";drawMv()};
 $("mvFromCat").onchange=()=>{mv.fc=$("mvFromCat").value;drawMv()};
 $("mvToType").onchange=()=>{mv.tt=$("mvToType").value;mv.tc="";drawMv()};
@@ -644,7 +961,9 @@ $("pager").onclick=e=>{
 $("form").onsubmit=()=>{
   const amount=parseFloat($("amt").value);
   if(!(amount>0))return;
-  const rec={id:edit?edit.id:Date.now(),type,cat,amount,date:$("date").value,time:edit?edit.time||"":"",name:$("nm").value.trim(),note:$("note").value.trim()};
+  // 收支方向由分類決定；編輯時類型與分類都沒改就保留原本的方向（不受之後改分類方向的影響）
+  const sign=edit&&edit.type===type&&edit.cat===cat?sgn(edit):catSign(type,cat);
+  const rec={id:edit?edit.id:Date.now(),type,cat,sign,amount,date:$("date").value,time:edit?edit.time||"":"",name:$("nm").value.trim(),note:$("note").value.trim()};
   data=edit?data.map(r=>r.id===edit.id?rec:r):[...data,rec];
   save();enqueue({op:"set",rec});
   const d=new Date(rec.date+"T00:00");cur=new Date(d.getFullYear(),d.getMonth(),1);
@@ -684,25 +1003,51 @@ function download(name,text,mime){
   a.href=URL.createObjectURL(new Blob([text],{type:mime}));a.download=name;a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
-$("exJson").onclick=()=>download("ledger-"+ymd(new Date())+".json",JSON.stringify(data),"application/json");
+// 備份檔：{app, version:2, data:帳目, cfg:{types, cats, order}}；舊版備份是單純的帳目陣列，還原時仍可讀
+$("exJson").onclick=()=>download("ledger-"+ymd(new Date())+".json",
+  JSON.stringify({app:"ledger",version:2,data,cfg:{types:cfg.types,cats:cfg.cats,order:ordOf()}}),"application/json");
 $("exCsv").onclick=()=>{
   const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
   const f=filt(),src=f.active?data.filter(f.test):data;  // 有篩選時只匯出篩選結果
-  const csv="日期,時間,名稱,類型,分類,金額,備註\n"+[...src].sort((a,b)=>a.date.localeCompare(b.date)||(a.time||"").localeCompare(b.time||""))
-    .map(r=>[r.date,r.time||"",q(r.name||""),typeInfo(r.type).name,r.cat,r.amount,q(r.note||"")].join(",")).join("\n");
+  const csv="日期,時間,名稱,類型,分類,收支,金額,備註\n"+[...src].sort((a,b)=>a.date.localeCompare(b.date)||(a.time||"").localeCompare(b.time||""))
+    .map(r=>[r.date,r.time||"",q(r.name||""),q(typeInfo(r.type).name),q(r.cat),sgn(r)>0?"收入":"支出",r.amount,q(r.note||"")].join(",")).join("\n");
   download("ledger-"+ymd(new Date())+".csv","﻿"+csv,"text/csv");
 };
 $("imJson").onclick=()=>$("file").click();
 $("file").onchange=async e=>{
   const f=e.target.files[0];if(!f)return;
   try{
-    const arr=JSON.parse(await f.text());
+    const j=JSON.parse(await f.text());
+    const arr=Array.isArray(j)?j:j&&j.data;
+    const b=!Array.isArray(j)&&j&&j.cfg&&typeof j.cfg==="object"?j.cfg:null;   // 新版備份才有設定
     if(!Array.isArray(arr)||!arr.every(r=>r&&r.date&&r.amount>0&&typeof r.type==="string"&&r.type&&r.cat))throw 0;
-    if(await ask("將以備份檔取代目前 "+data.length+" 筆資料，共 "+arr.length+" 筆，確定？")){
-      const keep=new Set(arr.map(r=>r.id));
+    if(b&&!(Array.isArray(b.types)&&b.cats&&typeof b.cats==="object"))throw 0;
+    const nCat=b?Object.values(b.cats).reduce((s,L)=>s+(Array.isArray(L)?L.length:0),0):0;
+    const msg="將以備份檔取代目前 "+data.length+" 筆資料，共 "+arr.length+" 筆"
+      +(b?"，並一併還原類型（"+b.types.length+" 個）、分類（"+nCat+" 個）與順序":"（這份備份不含類型／分類設定，維持目前設定）")+"，確定？";
+    if(await ask(msg)){
+      const oldItems=cfgItems();
+      if(b){
+        const od=b.order||{};
+        cfg={
+          types:b.types.map(t=>({id:String(t.id),name:String(t.name),sign:+t.sign||0})),
+          cats:Object.fromEntries(Object.entries(b.cats).map(([t,L])=>[t,(Array.isArray(L)?L:[]).map(c=>["",String(c[1]),c[2]===1||c[2]===-1?c[2]:0])])),
+          order:{types:Array.isArray(od.types)?od.types.map(String):[],cats:Object.fromEntries(Object.entries(od.cats||{}).map(([t,L])=>[t,Array.isArray(L)?L.map(String):[]]))}
+        };
+        lset("ledger.cfg",cfg);
+      }
+      const m=migrateLegacy(fixSigns(arr)),rows=m.rows;   // 舊備份裡的 exp／inc 群組一併轉成「未分組」
+      const keep=new Set(rows.map(r=>r.id));
       data.filter(r=>!keep.has(r.id)).forEach(r=>queue.push({op:"del",id:r.id}));
-      arr.forEach(rec=>queue.push({op:"set",rec}));
-      data=arr;save();render();
+      if(b){
+        // 設定：雲端上備份裡沒有的項目刪掉，備份裡的全部寫入（依最後狀態比對，等同整份還原）
+        data=rows;
+        const nk=new Set(cfgItems().map(cfgKey));
+        oldItems.filter(i=>!nk.has(cfgKey(i))).forEach(item=>queue.push({op:"cdel",item}));
+        cfgItems().forEach(item=>queue.push({op:"cset",item}));
+      }else m.ops.filter(o=>o.op!=="set").forEach(o=>queue.push(o));
+      rows.forEach(rec=>queue.push({op:"set",rec}));
+      data=rows;save();render();
       if(sync){lset("ledger.queue",queue);flush()}else queue=[];   // 關閉時 flush 會直接略過
     }
   }catch{tell("檔案格式不正確")}
@@ -790,7 +1135,7 @@ function renderReport(){
   let inc=0,exp=0;const ci={},ce={},pm={};
   ms.forEach(m=>{pm[m]={inc:0,exp:0,n:0}});
   rows.forEach(r=>{
-    const p=signOf(r.type)>0,x=pm[ymOf(r.date)];
+    const p=sgn(r)>0,x=pm[ymOf(r.date)];
     x.n++;
     if(p){inc+=r.amount;x.inc+=r.amount;ci[r.cat]=(ci[r.cat]||0)+r.amount}
     else{exp+=r.amount;x.exp+=r.amount;ce[r.cat]=(ce[r.cat]||0)+r.amount}
@@ -803,14 +1148,19 @@ function renderReport(){
     +`<tr><th>合計</th><th class="n">${fmt(inc)}</th><th class="n">${fmt(exp)}</th><th class="n">${fmt(inc-exp)}</th><th class="n">${rows.length}</th></tr></table>`+lineSvg(ms,pm):"";
   const detail=$("rpDetail").checked?`<h3>帳目明細</h3><table><tr><th>日期</th><th>時間</th><th>名稱</th><th>類型</th><th>分類</th><th class="n">金額</th><th>備註</th></tr>`
     +(rows.map(r=>{
-      const p=signOf(r.type)>0;
+      const p=sgn(r)>0;
       return `<tr><td>${multi?r.date:r.date.slice(5)}</td><td>${r.time||""}</td><td>${esc(r.name||"")}</td><td>${esc(typeInfo(r.type).name)}</td><td>${esc(r.cat)}</td><td class="n ${p?"inc":"exp"}">${p?"+":"-"}${fmt(r.amount)}</td><td>${esc(r.note||"")}</td></tr>`;
     }).join("")||'<tr><td colspan="7">這段期間沒有帳目</td></tr>')+"</table>":"";
-  // 自訂類型各自的分類占比（支出、收入已在上面兩大塊，不重複列）
+  // 各類型自己的分類占比：期間內有兩個以上類型的帳目時，每個類型依收入／支出各列一張（只有一個類型就和上面兩大塊相同，不重複）
   const bt={};
-  rows.forEach(r=>{const t=bt[r.type]||(bt[r.type]={tot:0,cats:{}});t.tot+=r.amount;t.cats[r.cat]=(t.cats[r.cat]||0)+r.amount});
-  const perType=Object.entries(bt).filter(([t])=>t!=="exp"&&t!=="inc").sort((x,y)=>y[1].tot-x[1].tot)
-    .map(([t,o])=>`<h3>${esc(typeInfo(t).name)}占比（合計 ${fmt(o.tot)}）</h3><table><tr><th>分類</th><th class="n">金額</th><th class="n">占比</th><th></th></tr>${share(o.cats,o.tot)}</table>${pieSvg(o.cats,o.tot)}`).join("");
+  rows.forEach(r=>{
+    const p=sgn(r)>0,k=r.type+"|"+(p?"+":"-");
+    const t=bt[k]||(bt[k]={type:r.type,p,tot:0,cats:{}});
+    t.tot+=r.amount;t.cats[r.cat]=(t.cats[r.cat]||0)+r.amount;
+  });
+  const manyTypes=new Set(rows.map(r=>r.type)).size>=2;
+  const perType=!manyTypes?"":Object.values(bt).sort((x,y)=>y.tot-x.tot)
+    .map(o=>`<h3>${esc(typeInfo(o.type).name)}・${o.p?"收入":"支出"}占比（合計 ${fmt(o.tot)}）</h3><table><tr><th>分類</th><th class="n">金額</th><th class="n">占比</th><th></th></tr>${share(o.cats,o.tot)}</table>${pieSvg(o.cats,o.tot)}`).join("");
   const title=multi?a+" ～ "+b+" 月度統計":a.replace("-"," 年 ")+" 月 月度統計";
   $("rpBody").innerHTML=`<h2>${title}</h2>
     <div class="rsum"><div><small>收入</small><b class="inc">${fmt(inc)}</b></div><div><small>支出</small><b class="exp">${fmt(exp)}</b></div>
@@ -871,6 +1221,14 @@ $("syncSw").onchange=()=>{
   if(sync.on)flush();else status("☁️ 同步已關閉（變更先存在本機，開啟後補送）");
 };
 
+// 啟動時：本機還留著舊版內建群組（exp／inc）就併進「未分組」；有設定同步時把變更排進佇列
+{
+  const m=migrateLegacy(data);
+  if(m.ops.length){
+    data=m.rows;save();
+    if(sync){queue.push(...m.ops);lset("ledger.queue",queue)}
+  }
+}
 render();
 if(syncOn())flush();
 else if(sync)status("☁️ 同步已關閉（變更先存在本機，開啟後補送）");
