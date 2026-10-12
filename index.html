@@ -185,7 +185,7 @@ main .card{margin:5px 0}   /* flex 內外距不會合併，所以手機版各減
     <button id="exJson">備份 JSON</button>
     <button id="imJson">還原 JSON</button>
     <input type="file" id="file" accept=".json" hidden>
-    <button id="rpBtn">📄 當月報表</button>
+    <button id="rpBtn">📄 月度統計</button>
     <button id="mgBtn">🏷 管理類型與分類</button>
     <button id="syncBtn">☁️ 雲端同步設定</button>
     <button id="clearBtn" style="color:var(--exp)">🗑 清除本地資料</button>
@@ -789,13 +789,19 @@ function renderReport(){
       const p=signOf(r.type)>0;
       return `<tr><td>${multi?r.date:r.date.slice(5)}</td><td>${r.time||""}</td><td>${esc(r.name||"")}</td><td>${esc(typeInfo(r.type).name)}</td><td>${esc(r.cat)}</td><td class="n ${p?"inc":"exp"}">${p?"+":"-"}${fmt(r.amount)}</td><td>${esc(r.note||"")}</td></tr>`;
     }).join("")||'<tr><td colspan="7">這段期間沒有帳目</td></tr>')+"</table>":"";
-  const title=multi?a+" ～ "+b+" 收支報表":a.replace("-"," 年 ")+" 月 收支報表";
+  // 自訂類型各自的分類占比（支出、收入已在上面兩大塊，不重複列）
+  const bt={};
+  rows.forEach(r=>{const t=bt[r.type]||(bt[r.type]={tot:0,cats:{}});t.tot+=r.amount;t.cats[r.cat]=(t.cats[r.cat]||0)+r.amount});
+  const perType=Object.entries(bt).filter(([t])=>t!=="exp"&&t!=="inc").sort((x,y)=>y[1].tot-x[1].tot)
+    .map(([t,o])=>`<h3>${esc(typeInfo(t).name)}占比（合計 ${fmt(o.tot)}）</h3><table><tr><th>分類</th><th class="n">金額</th><th class="n">占比</th><th></th></tr>${share(o.cats,o.tot)}</table>${pieSvg(o.cats,o.tot)}`).join("");
+  const title=multi?a+" ～ "+b+" 月度統計":a.replace("-"," 年 ")+" 月 月度統計";
   $("rpBody").innerHTML=`<h2>${title}</h2>
     <div class="rsum"><div><small>收入</small><b class="inc">${fmt(inc)}</b></div><div><small>支出</small><b class="exp">${fmt(exp)}</b></div>
     <div><small>結餘</small><b>${fmt(inc-exp)}</b></div><div><small>筆數</small><b>${rows.length}</b></div></div>
     ${perMonth}
     <h3>支出占比</h3><table><tr><th>分類</th><th class="n">金額</th><th class="n">占比</th><th></th></tr>${share(ce,exp)}</table>${pieSvg(ce,exp)}
     <h3>收入占比</h3><table><tr><th>分類</th><th class="n">金額</th><th class="n">占比</th><th></th></tr>${share(ci,inc)}</table>${pieSvg(ci,inc)}
+    ${perType}
     ${detail}`;
 }
 $("rpBtn").onclick=openReport;
