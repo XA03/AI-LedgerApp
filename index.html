@@ -49,6 +49,7 @@ label{display:block;font-size:13px;color:var(--sub);margin:10px 0 4px}
 input,select{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);font:inherit}
 .seg{display:flex;flex-wrap:wrap;gap:6px}
 .seg[hidden]{display:none}
+#typeBox[hidden]+#catBox{grid-column:1/-1}   /* 沒有類型選單時，分類佔滿整列 */
 .seg button{flex:1;min-width:64px;padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
 .seg button.cu,.cats button.cu{border-color:var(--exp);color:var(--exp)}
 .seg button.ro,.cats button.ro{opacity:.4}
@@ -104,17 +105,36 @@ main .card{margin:5px 0}   /* flex 內外距不會合併，所以手機版各減
 .addbox input{flex:1;min-width:0}
 .addbox button{padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
 #tyAdd,#caAdd{background:var(--main);color:#fff;border-color:var(--main)}
-.chips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:6px 0}   /* 固定每列 3 個，不會因名稱長短而換行錯位 */
-.chips span{display:flex;align-items:center;min-width:0;padding:5px 8px;border:1px solid var(--line);border-radius:999px;background:var(--bg);font-size:14px}
-.chips .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-style:normal}
-.chips .nm.ci{color:var(--inc)}.chips .nm.ce{color:var(--exp)}
-.chips span.cu{border-color:var(--main)}
-.chips span[data-k]{cursor:grab;touch-action:none;user-select:none}
-.chips span.drag{opacity:.35}
-span.ghost{padding:5px 10px;border:1px solid var(--main);border-radius:999px;background:var(--card);font-size:14px;box-shadow:0 4px 14px #0004;opacity:.95;white-space:nowrap;cursor:grabbing}
-span.ghost button{display:none}
-.chips button{margin-left:2px}
-.chips button{border:0;background:none;color:var(--exp);padding:0 0 0 4px;font-size:13px}
+/* 管理視窗：左邊類型清單、右邊該類型的分類清單；每列只放一個 ⋯，點開才出現編輯／刪除 */
+#mgDlg{width:min(94vw,680px)}
+.mghead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.mghead button{padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);font-size:13px}
+.mgcols{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+@media (max-width:560px){.mgcols{grid-template-columns:1fr}}
+.mgcols h4{margin:0 0 4px;font-size:13px;color:var(--sub);font-weight:600}
+.mglist{list-style:none;margin:0 0 6px;padding:0;max-height:min(46vh,340px);overflow-y:auto}
+.mglist li{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:7px 8px;margin:4px 0;border:1px solid var(--line);border-radius:8px;background:var(--bg);cursor:pointer}
+.mglist li.sel{border-color:var(--main);outline:1px solid var(--main)}
+.mglist li.grp{border:0;background:none;outline:0;cursor:default;padding:2px 2px 0;margin:8px 0 0;font-size:12px;color:var(--sub)}
+.mglist .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-style:normal}
+.mglist .nm.ci{color:var(--inc)}.mglist .nm.ce{color:var(--exp)}
+.mglist .cnt{font-size:12px;color:var(--sub)}
+.grip{cursor:grab;touch-action:none;user-select:none;color:var(--sub);padding:0 4px;font-style:normal;font-size:18px;line-height:1}
+.mglist li[data-k]{user-select:none}
+.mglist .more{border:0;background:none;color:var(--sub);font-size:18px;line-height:1;padding:0 4px}
+.mglist .acts{flex-basis:100%;display:flex;gap:6px;padding-left:20px}
+.mglist .acts button{padding:4px 10px;border:1px solid var(--line);border-radius:6px;background:var(--card);font-size:13px}
+.mglist .acts button[data-dt],.mglist .acts button[data-dc]{color:var(--exp)}
+.mglist li.drag{opacity:.35}
+.ghost{display:flex;align-items:center;gap:6px;padding:7px 8px;border:1px solid var(--main);border-radius:8px;background:var(--card);box-shadow:0 4px 14px #0004;opacity:.95;white-space:nowrap;cursor:grabbing;list-style:none}
+.ghost .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;font-style:normal}
+.ghost .nm.ci{color:var(--inc)}.ghost .nm.ce{color:var(--exp)}
+.ghost .more,.ghost .acts,.ghost .cnt{display:none}
+.mgtip{font-size:12px;color:var(--sub);margin:8px 0 0}
+#mgSearch{margin-top:2px}
+/* 金額等數字輸入框不要右側的 +/- 微調鈕，純輸入 */
+#amt,#fMin,#fMax{-moz-appearance:textfield;appearance:textfield}
+#amt::-webkit-outer-spin-button,#amt::-webkit-inner-spin-button,#fMin::-webkit-outer-spin-button,#fMin::-webkit-inner-spin-button,#fMax::-webkit-outer-spin-button,#fMax::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .lnk{background:none;border:0;color:var(--sub);font-size:13px;padding:0 0 8px}
 .seg button.on{background:var(--main);color:#fff;border-color:var(--main)}
 .cats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
@@ -139,7 +159,7 @@ span.ghost button{display:none}
 .tools button{padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);font-size:13px}
 #rp{position:fixed;inset:0;z-index:50;overflow:auto;background:var(--bg);padding:12px 16px 40px}
 #rp[hidden]{display:none}
-.rpbar{display:flex;gap:8px;max-width:760px;margin:0 auto 12px}
+.rpbar{display:flex;flex-wrap:wrap;gap:8px;max-width:760px;margin:0 auto 12px}
 .rpbar button{padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--card)}
 .rpbar .pri{background:var(--main);color:#fff;border-color:var(--main)}
 .rpopts{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;max-width:760px;margin:0 auto 12px}
@@ -212,6 +232,7 @@ span.ghost button{display:none}
     <button id="imJson">還原 JSON</button>
     <input type="file" id="file" accept=".json" hidden>
     <button id="rpBtn">📄 月度統計</button>
+    <button id="acBtn">∑ 累計統計</button>
     <button id="mgBtn">🏷 管理類型與分類</button>
     <button id="syncBtn">☁️ 雲端同步設定</button>
     <button id="clearBtn" style="color:var(--exp)">🗑 清除本地資料</button>
@@ -228,6 +249,9 @@ span.ghost button{display:none}
 <div id="rp" hidden>
   <div class="rpbar noprint"><button class="pri" id="rpPrint">🖨 列印／存成 PDF</button><button id="rpSheet">📊 建立試算表月表</button><button id="rpClose">關閉</button></div>
   <div class="rpopts noprint">
+    <label hidden>類型 <select id="acType"></select></label>
+    <label>類型 <select id="rpType"></select></label>
+    <label>分類 <select id="rpCat"></select></label>
     <label>起始 <select id="rpFrom"></select></label>
     <label>結束 <select id="rpTo"></select></label>
     <label><input type="checkbox" id="rpDetail" checked> 包含帳目明細</label>
@@ -237,10 +261,13 @@ span.ghost button{display:none}
 
 <dialog id="dlg">
   <form method="dialog" id="form">
-    <div class="seg" id="typeSeg"></div>
     <label>帳目名稱</label><input id="nm" type="text" maxlength="40" placeholder="例如：午餐便當">
     <label>金額</label><input id="amt" type="number" inputmode="decimal" min="0" step="any" required>
-    <label>分類（綠色為收入，紅色為支出）</label><div class="cats" id="cats"></div>
+    <div class="two">
+      <div id="typeBox"><label>類型</label><select id="typeSel"></select></div>
+      <div id="catBox"><label>分類</label><select id="catSel"></select></div>
+    </div>
+    <div id="catNote" hidden style="font-size:12px;color:var(--sub);margin-top:4px">尚未建立分類，可到頁面下方「🏷 管理類型與分類」新增</div>
     <label>日期</label><input id="date" type="date" required>
     <label>備註</label><input id="note" type="text" maxlength="60">
     <div class="row">
@@ -267,30 +294,41 @@ span.ghost button{display:none}
 </dialog>
 
 <dialog id="mgDlg">
-  <b>管理類型與分類</b>
-  <label>類型（分類的大群組，不分收支；「未分組」＝沒放進類型的分類，不能改名或刪除，空了會自動隱藏）</label>
-  <div class="chips" id="mgTypes"></div>
-  <div class="addbox">
-    <input id="tyName" type="text" maxlength="20" placeholder="新類型名稱，例如：生活">
-    <button type="button" id="tyAdd">新增</button>
+  <div class="mghead"><b>管理類型與分類</b><button type="button" id="mvOpen">批次搬移…</button></div>
+  <input id="mgSearch" type="search" placeholder="搜尋類型或分類">
+  <div class="mgcols">
+    <section>
+      <h4>類型</h4>
+      <ul class="mglist" id="mgTypes"></ul>
+      <div class="addbox">
+        <input id="tyName" type="text" maxlength="20" placeholder="新類型，例如：生活">
+        <button type="button" id="tyAdd">新增</button>
+      </div>
+    </section>
+    <section>
+      <h4 id="mgCatTitle">分類</h4>
+      <ul class="mglist" id="mgCats"></ul>
+      <div class="addbox">
+        <input id="caName" type="text" maxlength="20" placeholder="新分類，例如：餐飲">
+        <select id="caSign" style="width:auto"><option value="-1">支出</option><option value="1">收入</option></select>
+        <button type="button" id="caAdd">新增</button>
+      </div>
+    </section>
   </div>
-  <label>分類（先選類型；綠色為收入、紅色為支出；點 ✎ 可編輯名稱與方向）</label>
-  <select id="mgType"></select>
-  <div class="chips" id="mgCats"></div>
-  <div class="addbox">
-    <input id="caName" type="text" maxlength="20" placeholder="新分類名稱，例如：餐飲">
-    <select id="caSign" style="width:auto"><option value="-1">算支出</option><option value="1">算收入</option></select>
-    <button type="button" id="caAdd">新增</button>
-  </div>
-  <label>批次搬移帳目（把某類型／分類的帳目改成另一個）</label>
+  <p class="mgtip">點左邊的類型，右邊會顯示它的分類；按住項目（或左邊的 ≡）拖曳排序，⋯ 開啟編輯／刪除。「未分組」＝沒放進類型的分類，不能改名或刪除。</p>
+  <div class="row"><button type="button" class="pri" id="mgClose">完成</button></div>
+</dialog>
+
+<dialog id="mvDlg">
+  <b>批次搬移帳目</b>
+  <p class="mgtip">把某類型／分類的帳目整批改成另一個。</p>
   <div class="mv">
     <select id="mvFromType"></select><select id="mvFromCat"></select>
     <div class="mvarr">↓ 搬到</div>
     <select id="mvToType"></select><select id="mvToCat"></select>
   </div>
   <div class="addbox"><small id="mvInfo" style="flex:1;align-self:center;color:var(--sub)"></small><button type="button" id="mvGo">搬移</button></div>
-  <p style="font-size:12px;color:var(--sub)">只有自訂項目有 ✕ 可刪除；已有帳目使用的項目不能刪，可先用上方的批次搬移。</p>
-  <div class="row"><button type="button" class="pri" id="mgClose">完成</button></div>
+  <div class="row"><button type="button" class="pri" id="mvClose">關閉</button></div>
 </dialog>
 
 <dialog id="renDlg">
@@ -320,10 +358,14 @@ const KEY="ledger.v1";
 let cfg=lget("ledger.cfg",{types:[],cats:{}});
 // 設定與雲端「設定」工作表的轉換：每個類型／分類一列
 // 順序（拖曳排序）：cfg.order = {types:[類型 id…], cats:{類型 id:[分類名稱…]}}，同步時各存成一列 kind="order"（name 欄放 JSON 清單）
-const cfgKey=i=>i.k==="type"?"t|"+i.id:i.k==="order"?"o|"+(i.type||""):"c|"+i.type+"|"+i.name;
+// 累計統計：cfg.acc = [類型 id…]，有勾的類型會在試算表另外產生「累計・類型」工作表（統計該類型全部日期）；同步時存成一列 kind="acc"（name 欄放 JSON 清單）
+const cfgKey=i=>i.k==="type"?"t|"+i.id:i.k==="order"?"o|"+(i.type||""):i.k==="acc"?"a|":"c|"+i.type+"|"+i.name;
+const accOf=()=>cfg.acc||(cfg.acc=[]);
+const accOp=()=>accOf().length?{op:"cset",item:{k:"acc",name:JSON.stringify(accOf())}}:{op:"cdel",item:{k:"acc"}};
 const cfgItems=()=>{
   const o=cfg.order||{types:[],cats:{}};
   return [
+    ...(accOf().length?[{k:"acc",name:JSON.stringify(accOf())}]:[]),
     ...cfg.types.map(t=>({k:"type",id:t.id,name:t.name})),
     ...Object.entries(cfg.cats).flatMap(([type,L])=>L.map(([,name])=>({k:"cat",type,name,sign:catSign(type,name)}))),
     ...(o.types&&o.types.length?[{k:"order",type:"",name:JSON.stringify(o.types)}]:[]),
@@ -331,9 +373,10 @@ const cfgItems=()=>{
   ];
 };
 function cfgFromItems(items){
-  const c={types:[],cats:{},order:{types:[],cats:{}}};
+  const c={types:[],cats:{},order:{types:[],cats:{}},acc:[]};
   items.forEach(i=>{
-    if(i.k==="type")c.types.push({id:i.id,name:i.name,sign:+i.sign||0});   // 類型沒有收支方向；舊版留下的 sign 只當新分類的預設
+    if(i.k==="acc"){try{c.acc=(JSON.parse(i.name)||[]).map(String)}catch{}}
+    else if(i.k==="type")c.types.push({id:i.id,name:i.name,sign:+i.sign||0});   // 類型沒有收支方向；舊版留下的 sign 只當新分類的預設
     else if(i.k==="order"){
       let L=[];try{L=JSON.parse(i.name)||[]}catch{}
       if(i.type)c.order.cats[i.type]=L;else c.order.types=L;
@@ -644,13 +687,20 @@ const isCustomType=id=>cfg.types.some(t=>t.id===id);
 const isCustomCat=(t,n)=>(cfg.cats[t]||[]).some(x=>x[1]===n);
 
 // 新增帳目視窗：只負責選類型與分類
+// 類型、分類都用下拉選單；分類依收支方向分成「支出」「收入」兩組（組內維持管理視窗排好的順序）
 function drawTypes(){
-  $("typeSeg").hidden=allTypes().length<2;   // 只有一個群組（還沒建立自訂類型）就不顯示類型按鈕，直接選分類
-  $("typeSeg").innerHTML=allTypes().map(t=>`<button type="button" data-t="${esc(t.id)}" class="${t.id===type?"on":""}">${esc(t.name)}</button>`).join("");
+  const ts=allTypes();
+  $("typeBox").hidden=ts.length<2;   // 只有一個群組（還沒建立自訂類型）就不顯示類型，直接選分類
+  $("typeSel").innerHTML=ts.map(t=>`<option value="${esc(t.id)}">${esc(t.name)}</option>`).join("");
+  $("typeSel").value=type;
 }
 function drawCats(){
-  $("cats").innerHTML=catsOf(type).map(([,n,s])=>`<button type="button" data-c="${esc(n)}" class="${n===cat?"on ":""}${s>0?"ci":"ce"}">${esc(n)}</button>`).join("")
-    +((cfg.cats[type]||[]).length?"":'<div style="grid-column:1/-1;font-size:12px;color:var(--sub)">尚未建立分類，可到頁面下方「🏷 管理類型與分類」新增</div>');
+  const L=catsOf(type),opt=([,n])=>`<option value="${esc(n)}">${esc(n)}</option>`;
+  const ex=L.filter(x=>x[2]<0),inc=L.filter(x=>x[2]>0);
+  $("catSel").innerHTML=(ex.length?`<optgroup label="支出">${ex.map(opt).join("")}</optgroup>`:"")
+    +(inc.length?`<optgroup label="收入">${inc.map(opt).join("")}</optgroup>`:"");
+  $("catSel").value=cat;
+  $("catNote").hidden=!!(cfg.cats[type]||[]).length;
 }
 function setType(t){
   type=t;
@@ -718,25 +768,37 @@ async function moveRecs(){
   mv.fc="";drawMg();render();
   tell("已搬移 "+recs.length+" 筆帳目。");
 }
+let mgOpen=null;   // 目前展開 ⋯ 動作的那一列："t:類型id" 或 "c:分類名稱"
 function drawMg(){
   drawMv();
   const ts=allTypes();
   if(!ts.some(t=>t.id===mgType))mgType=ts[0].id;
-  // 晶片可拖曳排序（data-k 是排序用的鍵）；自訂類型可改名／刪除，分類可改名／切換方向（自訂的才能刪）
-  $("mgTypes").innerHTML=ts.map(t=>{
-    const cu=isCustomType(t.id);
-    return `<span data-k="${esc(t.id)}" class="${cu?"cu":""}"><i class="nm" title="${esc(t.name)}">${esc(t.name)}</i>${cu?` <button type="button" data-rt="${esc(t.id)}" title="重新命名">✎</button><button type="button" data-dt="${esc(t.id)}" title="刪除">✕</button>`:""}</span>`;
+  const q=$("mgSearch").value.trim().toLowerCase();
+  const hit=s=>!q||String(s).toLowerCase().includes(q);
+  const grip=q?"":'<i class="grip" title="按住拖曳排序">≡</i>';   // 搜尋中只顯示一部分項目，不開放排序
+  const cnt=(t,n)=>data.filter(r=>r.type===t&&(n===undefined||r.cat===n)).length;
+  const acts=items=>`<div class="acts">${items}</div>`;
+  // 左：類型清單（點選後右邊顯示它的分類）；自訂類型才有 ⋯（編輯、刪除）
+  $("mgTypes").innerHTML=ts.filter(t=>!q||hit(t.name)||catsOf(t.id,true).some(c=>hit(c[1]))).map(t=>{
+    const cu=isCustomType(t.id),key="t:"+t.id;
+    return `<li data-k="${esc(t.id)}" class="${t.id===mgType?"sel":""}">${grip}<span class="nm" title="${esc(t.name)}">${esc(t.name)}</span><span class="cnt">${catsOf(t.id,true).length}</span>`
+      +(accOf().includes(t.id)?'<span class="cnt" title="有累計統計工作表">累計</span>':"")
+      +(cu?`<button type="button" class="more" data-more="${esc(key)}" title="編輯／刪除">⋯</button>`:"")
+      +(cu&&mgOpen===key?acts(`<button type="button" data-rt="${esc(t.id)}">編輯</button><button type="button" data-at="${esc(t.id)}">累計：${accOf().includes(t.id)?"開":"關"}</button><button type="button" data-dt="${esc(t.id)}">刪除</button>`):"")+"</li>";
   }).join("");
-  $("mgType").innerHTML=ts.map(t=>`<option value="${esc(t.id)}">${esc(t.name)}</option>`).join("");
-  $("mgType").value=mgType;
-  // 只列真正存在的分類；「其他支出／其他收入」只是記帳時的預設選項，不是分類，不在這裡出現
-  const mine=catsOf(mgType,true);
-  $("mgCats").innerHTML=mine.map(([e,n,s])=>{
-    const cu=isCustomCat(mgType,n);
-    const btn=` <button type="button" data-rc="${esc(n)}" title="編輯名稱與收支方向">✎</button>`
-      +(cu?`<button type="button" data-dc="${esc(n)}" title="刪除">✕</button>`:"");
-    return `<span data-k="${esc(n)}" class="${cu?"cu":""}"><i class="nm ${s>0?"ci":"ce"}" title="${esc(n)}（${s>0?"收入":"支出"}）">${esc(n)}</i>${btn}</span>`;
-  }).join("")+(mine.length?"":'<div style="grid-column:1/-1;font-size:12px;color:var(--sub)">這個類型還沒有分類（記帳時會有「其他支出」「其他收入」預設選項）</div>');
+  // 右：選到的類型的分類，依收入／支出分兩段（「其他支出」「其他收入」只是記帳時的預設選項，不在這裡）
+  $("mgCatTitle").textContent="「"+typeInfo(mgType).name+"」的分類";
+  const L=catsOf(mgType,true).filter(c=>hit(c[1]));
+  const row=([,n,s])=>{
+    const cu=isCustomCat(mgType,n),key="c:"+n;
+    const menu=mgOpen===key?acts(`<button type="button" data-rc="${esc(n)}">編輯</button>`+(cu?`<button type="button" data-dc="${esc(n)}">刪除</button>`:"")):"";
+    return `<li data-k="${esc(n)}" data-g="${s>0?"i":"e"}">${grip}<span class="nm ${s>0?"ci":"ce"}" title="${esc(n)}">${esc(n)}</span><span class="cnt">${cnt(mgType,n)}</span>`
+      +`<button type="button" class="more" data-more="${esc(key)}" title="編輯／刪除">⋯</button>${menu}</li>`;
+  };
+  const ex=L.filter(c=>c[2]<0),inc=L.filter(c=>c[2]>0);
+  $("mgCats").innerHTML=(ex.length?'<li class="grp">支出</li>'+ex.map(row).join(""):"")
+    +(inc.length?'<li class="grp">收入</li>'+inc.map(row).join(""):"")
+    +(L.length?"":`<li class="grp">${q?"沒有符合的分類":"這個類型還沒有分類（記帳時仍有「其他支出」「其他收入」可選）"}</li>`);
   $("caSign").value=String(typeDefSign(mgType));
 }
 // 把一批變更排進同步佇列（只 flush 一次）
@@ -813,37 +875,43 @@ async function renameType(id){
   if(mv.tt===id)mv.tt=nn;
   ops.push({op:"cset",item:{k:"type",id:nn,name:nn}});
   (cfg.cats[nn]||[]).forEach(([,n])=>ops.push({op:"cset",item:{k:"cat",type:nn,name:n,sign:catSign(nn,n)}}));
+  if(accOf().includes(id)){cfg.acc=accOf().map(x=>x===id?nn:x);ops.push(accOp())}
   if(od.types.length)ops.push({op:"cset",item:{k:"order",type:"",name:JSON.stringify(od.types)}});
   if(od.cats[nn])ops.push({op:"cset",item:{k:"order",type:nn,name:JSON.stringify(od.cats[nn])}});
   lset("ledger.cfg",cfg);save();
   pushOps([...ops,...recs.map(rec=>({op:"set",rec}))]);
   drawMg();render();
 }
-// 拖曳排序：按住晶片（不含上面的按鈕）移動到想要的位置放開；滑鼠與觸控都可用。放開後呼叫 onDone(新順序的鍵清單)
+// 拖曳排序：按住清單項目左邊的把手 ⠿ 移動到想要的位置放開；滑鼠與觸控都可用。
+// 分類只能在同一段（收入／支出）內交換。放開後呼叫 onDone(新順序的鍵清單)
 function sortable(box,onDone){
   box.addEventListener("pointerdown",e=>{
+    // 滑鼠：抓整列（按鈕除外）都能拖；觸控：只有把手能拖，不然手指滑動就無法捲動清單
+    const grip=e.target.closest(".grip");
+    if(!grip&&(e.pointerType==="touch"||e.target.closest("button")))return;
     const chip=e.target.closest("[data-k]");
-    if(!chip||e.target.closest("button")||!box.contains(chip))return;
+    if(!chip||!box.contains(chip))return;
+    e.preventDefault();   // 避免開始選取文字、觸控時捲動頁面
     const keys=()=>[...box.querySelectorAll("[data-k]")].map(x=>x.dataset.k);
     const before=keys().join("\u0001"),sx=e.clientX,sy=e.clientY;
     let moved=false,ghost=null;
     const rect=chip.getBoundingClientRect(),ox=sx-rect.left,oy=sy-rect.top;
-    // move／up 掛在 document 上：重新排列時晶片會被移動位置，掛在晶片上的事件會因此中斷
+    // move／up 掛在 document 上：重新排列時項目會被移動位置，掛在項目上的事件會因此中斷
     const move=ev=>{
       if(ev.pointerId!==e.pointerId)return;
       if(!moved&&Math.hypot(ev.clientX-sx,ev.clientY-sy)<4)return;
       if(!moved){
         moved=true;chip.classList.add("drag");
-        // 跟著游標走的半透明複本；原位置的晶片留作「放開後會在這裡」的預覽
+        // 跟著游標走的半透明複本；原位置的項目留作「放開後會在這裡」的預覽
         ghost=chip.cloneNode(true);
         ghost.className="ghost";ghost.style.cssText="position:fixed;z-index:99;pointer-events:none;margin:0;width:"+rect.width+"px";
         (box.closest("dialog")||document.body).appendChild(ghost);   // 放在視窗（dialog）裡才會顯示在它上面
       }
       ghost.style.left=(ev.clientX-ox)+"px";ghost.style.top=(ev.clientY-oy)+"px";
-      // 游標一碰到別的晶片就交換位置（不用拉過一半）
+      // 游標一碰到同一段的別的項目就交換位置（不用拉過一半）
       const over=document.elementFromPoint(ev.clientX,ev.clientY);
       const t=over&&over.closest&&over.closest("[data-k]");
-      if(t&&t!==chip&&box.contains(t)){
+      if(t&&t!==chip&&box.contains(t)&&t.dataset.g===chip.dataset.g){
         const after=chip.compareDocumentPosition(t)&Node.DOCUMENT_POSITION_FOLLOWING;
         box.insertBefore(chip,after?t.nextSibling:t);
       }
@@ -865,7 +933,9 @@ async function delType(id){
   if(!await ask("刪除類型「"+typeInfo(id).name+"」及其自訂分類？"))return;
   (cfg.cats[id]||[]).forEach(([,name])=>enqueue({op:"cdel",item:{k:"cat",type:id,name}}));
   enqueue({op:"cdel",item:{k:"type",id}});
-  cfg.types=cfg.types.filter(t=>t.id!==id);delete cfg.cats[id];lset("ledger.cfg",cfg);
+  cfg.types=cfg.types.filter(t=>t.id!==id);delete cfg.cats[id];
+  if(accOf().includes(id)){cfg.acc=accOf().filter(x=>x!==id);enqueue(accOp())}
+  lset("ledger.cfg",cfg);
   drawMg();
 }
 async function delCat(t,name){
@@ -911,24 +981,41 @@ function openDlg(r){
 
 $("fab").onclick=()=>openDlg();
 $("cancel").onclick=()=>$("dlg").close();
-$("typeSeg").onclick=e=>{const b=e.target.closest("button");if(b)setType(b.dataset.t)};
-$("cats").onclick=e=>{const b=e.target.closest("button");if(b){cat=b.dataset.c;drawCats()}};
+$("typeSel").onchange=()=>setType($("typeSel").value);
+$("catSel").onchange=()=>{cat=$("catSel").value};
 
-// 管理類型與分類視窗
-$("mgBtn").onclick=()=>{mgType=defType();drawMg();$("mgDlg").showModal()};
+// 管理類型與分類視窗：左邊類型、右邊該類型的分類；⋯ 展開編輯／刪除；上方可搜尋；批次搬移在另一個視窗
+$("mgBtn").onclick=()=>{mgType=defType();mgOpen=null;$("mgSearch").value="";drawMg();$("mgDlg").showModal()};
 $("mgClose").onclick=()=>$("mgDlg").close();
 $("mgDlg").addEventListener("close",render);   // 關閉後更新篩選選單
-$("mgType").onchange=()=>{mgType=$("mgType").value;drawMg()};
+$("mgSearch").addEventListener("input",()=>{mgOpen=null;drawMg()});
+$("mvOpen").onclick=()=>{drawMv();$("mvDlg").showModal()};
+$("mvClose").onclick=()=>$("mvDlg").close();
 $("mgTypes").onclick=e=>{
-  const b=e.target.closest("button");if(!b)return;
-  if(b.dataset.rt!==undefined)renameType(b.dataset.rt);else delType(b.dataset.dt);
+  const b=e.target.closest("button");
+  if(b){
+    if(b.dataset.more!==undefined){mgOpen=mgOpen===b.dataset.more?null:b.dataset.more;drawMg();return}
+    mgOpen=null;
+    if(b.dataset.at!==undefined){
+      const a=accOf(),i=a.indexOf(b.dataset.at);
+      i<0?a.push(b.dataset.at):a.splice(i,1);
+      lset("ledger.cfg",cfg);pushOps([accOp()]);drawMg();
+    }
+    else if(b.dataset.rt!==undefined)renameType(b.dataset.rt);
+    else if(b.dataset.dt!==undefined)delType(b.dataset.dt);
+    return;
+  }
+  const li=e.target.closest("[data-k]");
+  if(li&&!e.target.closest(".grip")){mgType=li.dataset.k;mgOpen=null;drawMg()}   // 點類型：右邊換成它的分類
 };
 $("mgCats").onclick=e=>{
   const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.more!==undefined){mgOpen=mgOpen===b.dataset.more?null:b.dataset.more;drawMg();return}
+  mgOpen=null;
   if(b.dataset.rc!==undefined)editCat(mgType,b.dataset.rc);
-  else delCat(mgType,b.dataset.dc);
+  else if(b.dataset.dc!==undefined)delCat(mgType,b.dataset.dc);
 };
-// 拖曳改變順序：新順序存在 cfg.order，並同步到試算表「設定」；新增帳目的類型／分類按鈕、篩選選單都依這個順序
+// 拖曳改變順序：新順序存在 cfg.order，並同步到試算表「設定」；新增帳目的類型／分類選單、篩選選單都依這個順序
 sortable($("mgTypes"),keys=>{
   ordOf().types=keys;lset("ledger.cfg",cfg);
   pushOps([{op:"cset",item:{k:"order",type:"",name:JSON.stringify(keys)}}]);
@@ -1005,7 +1092,7 @@ function download(name,text,mime){
 }
 // 備份檔：{app, version:2, data:帳目, cfg:{types, cats, order}}；舊版備份是單純的帳目陣列，還原時仍可讀
 $("exJson").onclick=()=>download("ledger-"+ymd(new Date())+".json",
-  JSON.stringify({app:"ledger",version:2,data,cfg:{types:cfg.types,cats:cfg.cats,order:ordOf()}}),"application/json");
+  JSON.stringify({app:"ledger",version:2,data,cfg:{types:cfg.types,cats:cfg.cats,order:ordOf(),acc:accOf()}}),"application/json");
 $("exCsv").onclick=()=>{
   const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
   const f=filt(),src=f.active?data.filter(f.test):data;  // 有篩選時只匯出篩選結果
@@ -1032,7 +1119,8 @@ $("file").onchange=async e=>{
         cfg={
           types:b.types.map(t=>({id:String(t.id),name:String(t.name),sign:+t.sign||0})),
           cats:Object.fromEntries(Object.entries(b.cats).map(([t,L])=>[t,(Array.isArray(L)?L:[]).map(c=>["",String(c[1]),c[2]===1||c[2]===-1?c[2]:0])])),
-          order:{types:Array.isArray(od.types)?od.types.map(String):[],cats:Object.fromEntries(Object.entries(od.cats||{}).map(([t,L])=>[t,Array.isArray(L)?L.map(String):[]]))}
+          order:{types:Array.isArray(od.types)?od.types.map(String):[],cats:Object.fromEntries(Object.entries(od.cats||{}).map(([t,L])=>[t,Array.isArray(L)?L.map(String):[]]))},
+          acc:Array.isArray(b.acc)?b.acc.map(String):[]
         };
         lset("ledger.cfg",cfg);
       }
@@ -1067,19 +1155,51 @@ function monthsBetween(a,b){
   while(y<y2||(y===y2&&m<=m2)){out.push(y+"-"+String(m).padStart(2,"0"));if(++m>12){m=1;y++}}
   return out;
 }
-let rpTouched=false;   // 使用者是否動過「包含帳目明細」
+let rpTouched=false;  // 使用者是否動過「包含帳目明細」
+let rpMode="month";   // "month"＝月度統計；"acc"＝累計統計（同一個畫面，範圍改成某類型的全部日期）
+function rpShow(mode){
+  rpMode=mode;
+  const acc=mode==="acc";
+  $("rpFrom").parentElement.hidden=$("rpTo").parentElement.hidden=acc;
+  $("acType").parentElement.hidden=!acc;
+  $("rpType").parentElement.hidden=$("rpCat").parentElement.hidden=acc;
+  $("rpSheet").hidden=acc;
+}
 function rpRange(){
   let a=$("rpFrom").value,b=$("rpTo").value;
   if(a>b)[a,b]=[b,a];
   return [a,b];
 }
+// 月度統計的類型／分類篩選（和首頁篩選同樣的概念）：選了類型後，分類只列那個類型的
+function fillRpFilters(resetCat){
+  const ts=allTypes(),tv=$("rpType").value,cv=resetCat?"":$("rpCat").value;
+  $("rpType").innerHTML='<option value="">全部</option>'+ts.map(t=>`<option value="${esc(t.id)}">${esc(t.name)}</option>`).join("");
+  $("rpType").value=ts.some(t=>t.id===tv)?tv:"";
+  const cats=[...new Set((tv?[typeInfo(tv)]:ts).flatMap(t=>catsOf(t.id).map(x=>x[1])))];
+  $("rpCat").innerHTML='<option value="">全部</option>'+cats.map(c=>`<option>${esc(c)}</option>`).join("");
+  $("rpCat").value=cats.includes(cv)?cv:"";
+}
 function openReport(){
+  $("rpType").value="";fillRpFilters(true);
   const cm=ymd(cur).slice(0,7),tm=ymd(new Date()).slice(0,7);
   const have=[...new Set([...data.map(r=>ymOf(r.date)),cm,tm])].sort();
   const opts=monthsBetween(have[0],have[have.length-1]).map(m=>`<option value="${m}">${m.replace("-"," 年 ")} 月</option>`).join("");
   $("rpFrom").innerHTML=opts;$("rpTo").innerHTML=opts;
   $("rpFrom").value=cm;$("rpTo").value=cm;
   rpTouched=false;$("rpDetail").checked=true;
+  rpShow("month");
+  renderReport();
+  $("rp").hidden=false;$("rp").scrollTop=0;
+}
+// 累計統計：只列出在「管理類型與分類」開了「累計」的類型；範圍是該類型全部日期
+function openAcc(){
+  const ids=accOf().filter(id=>cfg.types.some(t=>t.id===id));
+  if(!ids.length)return tell("還沒有要累計統計的類型。到「管理類型與分類」，在類型的 ⋯ 選單把「累計」開起來。");
+  const old=$("acType").value;
+  $("acType").innerHTML=ids.map(id=>`<option value="${esc(id)}">${esc(typeInfo(id).name)}</option>`).join("");
+  if(ids.includes(old))$("acType").value=old;
+  rpTouched=true;$("rpDetail").checked=false;
+  rpShow("acc");
   renderReport();
   $("rp").hidden=false;$("rp").scrollTop=0;
 }
@@ -1129,8 +1249,16 @@ function lineSvg(ms,pm){
   return `<h3>每月趨勢</h3><div class="line"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="每月收入、支出、結餘長條圖">${g}</svg><ul class="lg">${legend}</ul></div>`;
 }
 function renderReport(){
-  const [a,b]=rpRange(),ms=monthsBetween(a,b),multi=ms.length>1;
-  const rows=data.filter(r=>{const m=ymOf(r.date);return m>=a&&m<=b})
+  // 累計模式：範圍是所選類型的全部帳目（不分月份）；月度模式：所選起訖月份
+  const acc=rpMode==="acc",at=$("acType").value;
+  let [a,b]=acc?["",""]:rpRange();
+  if(acc){
+    const mm=data.filter(r=>r.type===at).map(r=>ymOf(r.date)).sort();
+    if(mm.length){a=mm[0];b=mm[mm.length-1]}
+  }
+  const ms=a?monthsBetween(a,b):[],multi=ms.length>1;
+  const rt=acc?"":$("rpType").value,rc=acc?"":$("rpCat").value;
+  const rows=data.filter(r=>acc?r.type===at:(m=>m>=a&&m<=b)(ymOf(r.date))&&(!rt||r.type===rt)&&(!rc||r.cat===rc))
     .sort((x,y)=>x.date.localeCompare(y.date)||(x.time||"").localeCompare(y.time||"")||x.id-y.id);
   let inc=0,exp=0;const ci={},ce={},pm={};
   ms.forEach(m=>{pm[m]={inc:0,exp:0,n:0}});
@@ -1158,10 +1286,12 @@ function renderReport(){
     const t=bt[k]||(bt[k]={type:r.type,p,tot:0,cats:{}});
     t.tot+=r.amount;t.cats[r.cat]=(t.cats[r.cat]||0)+r.amount;
   });
-  const manyTypes=new Set(rows.map(r=>r.type)).size>=2;
+  const manyTypes=!acc&&new Set(rows.map(r=>r.type)).size>=2;
   const perType=!manyTypes?"":Object.values(bt).sort((x,y)=>y.tot-x.tot)
     .map(o=>`<h3>${esc(typeInfo(o.type).name)}・${o.p?"收入":"支出"}占比（合計 ${fmt(o.tot)}）</h3><table><tr><th>分類</th><th class="n">金額</th><th class="n">占比</th><th></th></tr>${share(o.cats,o.tot)}</table>${pieSvg(o.cats,o.tot)}`).join("");
-  const title=multi?a+" ～ "+b+" 月度統計":a.replace("-"," 年 ")+" 月 月度統計";
+  const title=acc?"累計統計・"+esc(typeInfo(at).name)+(a?"（"+a+" ～ "+b+"）":"（沒有帳目）")
+    :(multi?a+" ～ "+b+" 月度統計":a.replace("-"," 年 ")+" 月 月度統計")
+      +(rt||rc?"（"+[rt&&"類型："+esc(typeInfo(rt).name),rc&&"分類："+esc(rc)].filter(Boolean).join("、")+"）":"");
   $("rpBody").innerHTML=`<h2>${title}</h2>
     <div class="rsum"><div><small>收入</small><b class="inc">${fmt(inc)}</b></div><div><small>支出</small><b class="exp">${fmt(exp)}</b></div>
     <div><small>結餘</small><b>${fmt(inc-exp)}</b></div><div><small>筆數</small><b>${rows.length}</b></div></div>
@@ -1172,6 +1302,10 @@ function renderReport(){
     ${detail}`;
 }
 $("rpBtn").onclick=openReport;
+$("acBtn").onclick=openAcc;
+$("acType").onchange=renderReport;
+$("rpType").onchange=()=>{fillRpFilters(true);renderReport()};
+$("rpCat").onchange=renderReport;
 $("rpFrom").onchange=$("rpTo").onchange=()=>{
   const [a,b]=rpRange();
   if(!rpTouched)$("rpDetail").checked=(a===b);   // 跨多個月時預設不含明細（可自行勾選）
