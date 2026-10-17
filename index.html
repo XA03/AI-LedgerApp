@@ -620,14 +620,15 @@ const esc=s=>s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&q
 
 // 篩選下拉選單隨類型、分類變動而更新（保留目前選擇）
 function fillFilters(){
-  const types=allTypes(),cats=[...new Set(types.flatMap(t=>catsOf(t.id).map(x=>x[1])))];
-  const sig=JSON.stringify([types.map(t=>t.id),cats]);
+  // 分類只列選到的類型底下的；沒選類型就列全部
+  const types=allTypes(),tv=$("fType").value,cv=$("fCat").value;
+  const cats=[...new Set((types.some(t=>t.id===tv)?[typeInfo(tv)]:types).flatMap(t=>catsOf(t.id).map(x=>x[1])))];
+  const sig=JSON.stringify([types.map(t=>t.id),tv,cats]);
   if(sig===fillFilters.sig)return;
   fillFilters.sig=sig;
-  const tv=$("fType").value,cv=$("fCat").value;
   $("fType").innerHTML='<option value="">全部</option>'+types.map(t=>`<option value="${esc(t.id)}">${esc(t.name)}</option>`).join("");
   $("fCat").innerHTML='<option value="">全部</option>'+cats.map(c=>`<option>${esc(c)}</option>`).join("");
-  $("fType").value=tv;$("fCat").value=cv;
+  $("fType").value=tv;$("fCat").value=cats.includes(cv)?cv:"";   // 換類型後，原本選的分類不在新清單裡就清掉
 }
 
 function filt(){
@@ -1163,7 +1164,7 @@ function rpShow(mode){
   const acc=mode==="acc";
   $("rpFrom").parentElement.hidden=$("rpTo").parentElement.hidden=acc;
   $("acType").parentElement.hidden=!acc;
-  $("rpType").parentElement.hidden=$("rpCat").parentElement.hidden=acc;
+  $("rpType").parentElement.hidden=acc;
   $("rpSheet").hidden=acc;
 }
 function rpRange(){
@@ -1173,15 +1174,17 @@ function rpRange(){
 }
 // 月度統計的類型／分類篩選（和首頁篩選同樣的概念）：選了類型後，分類只列那個類型的
 function fillRpFilters(resetCat){
-  const ts=allTypes(),tv=$("rpType").value,cv=resetCat?"":$("rpCat").value;
-  $("rpType").innerHTML='<option value="">全部</option>'+ts.map(t=>`<option value="${esc(t.id)}">${esc(t.name)}</option>`).join("");
-  $("rpType").value=ts.some(t=>t.id===tv)?tv:"";
+  const ts=allTypes(),acc=rpMode==="acc",tv=acc?$("acType").value:$("rpType").value,cv=resetCat?"":$("rpCat").value;
+  if(!acc){
+    $("rpType").innerHTML='<option value="">全部</option>'+ts.map(t=>`<option value="${esc(t.id)}">${esc(t.name)}</option>`).join("");
+    $("rpType").value=ts.some(t=>t.id===tv)?tv:"";
+  }
   const cats=[...new Set((tv?[typeInfo(tv)]:ts).flatMap(t=>catsOf(t.id).map(x=>x[1])))];
   $("rpCat").innerHTML='<option value="">全部</option>'+cats.map(c=>`<option>${esc(c)}</option>`).join("");
   $("rpCat").value=cats.includes(cv)?cv:"";
 }
 function openReport(){
-  $("rpType").value="";fillRpFilters(true);
+  rpShow("month");$("rpType").value="";fillRpFilters(true);
   const cm=ymd(cur).slice(0,7),tm=ymd(new Date()).slice(0,7);
   const have=[...new Set([...data.map(r=>ymOf(r.date)),cm,tm])].sort();
   const opts=monthsBetween(have[0],have[have.length-1]).map(m=>`<option value="${m}">${m.replace("-"," 年 ")} 月</option>`).join("");
@@ -1201,6 +1204,7 @@ function openAcc(){
   if(ids.includes(old))$("acType").value=old;
   rpTouched=true;$("rpDetail").checked=false;
   rpShow("acc");
+  fillRpFilters(true);
   renderReport();
   $("rp").hidden=false;$("rp").scrollTop=0;
 }
@@ -1258,8 +1262,8 @@ function renderReport(){
     if(mm.length){a=mm[0];b=mm[mm.length-1]}
   }
   const ms=a?monthsBetween(a,b):[],multi=ms.length>1;
-  const rt=acc?"":$("rpType").value,rc=acc?"":$("rpCat").value;
-  const rows=data.filter(r=>acc?r.type===at:(m=>m>=a&&m<=b)(ymOf(r.date))&&(!rt||r.type===rt)&&(!rc||r.cat===rc))
+  const rt=acc?"":$("rpType").value,rc=$("rpCat").value;
+  const rows=data.filter(r=>(acc?r.type===at:(m=>m>=a&&m<=b)(ymOf(r.date))&&(!rt||r.type===rt))&&(!rc||r.cat===rc))
     .sort((x,y)=>x.date.localeCompare(y.date)||(x.time||"").localeCompare(y.time||"")||x.id-y.id);
   let inc=0,exp=0;const ci={},ce={},pm={};
   ms.forEach(m=>{pm[m]={inc:0,exp:0,n:0}});
@@ -1288,23 +1292,29 @@ function renderReport(){
     t.tot+=r.amount;t.cats[r.cat]=(t.cats[r.cat]||0)+r.amount;
   });
   const manyTypes=!acc&&new Set(rows.map(r=>r.type)).size>=2;
-  const perType=!manyTypes?"":Object.values(bt).sort((x,y)=>y.tot-x.tot)
+  // 類型占比：各類型占總支出／總收入的比例（有兩個以上類型時才有意義）；選了特定分類時不顯示任何占比
+  const te={},ti={};
+  rows.forEach(r=>{const n=typeInfo(r.type).name,o=sgn(r)>0?ti:te;o[n]=(o[n]||0)+r.amount});
+  const typeShare=(label,o,tot)=>`<h3>${label}</h3><table><tr><th>類型</th><th class="n">金額</th><th class="n">占比</th><th></th></tr>${share(o,tot)}</table>${pieSvg(o,tot)}`;
+  const typeBlock=rc||!manyTypes?"":(Object.keys(te).length?typeShare("支出類型占比",te,exp):"")+(Object.keys(ti).length?typeShare("收入類型占比",ti,inc):"");
+  const perType=rc||!manyTypes?"":Object.values(bt).sort((x,y)=>y.tot-x.tot)
     .map(o=>`<h3>${esc(typeInfo(o.type).name)}・${o.p?"收入":"支出"}占比（合計 ${fmt(o.tot)}）</h3><table><tr><th>分類</th><th class="n">金額</th><th class="n">占比</th><th></th></tr>${share(o.cats,o.tot)}</table>${pieSvg(o.cats,o.tot)}`).join("");
-  const title=acc?"累計統計・"+esc(typeInfo(at).name)+(a?"（"+a+" ～ "+b+"）":"（沒有帳目）")
+  const title=acc?"累計統計・"+esc(typeInfo(at).name)+(rc?"・"+esc(rc):"")+(a?"（"+a+" ～ "+b+"）":"（沒有帳目）")
     :(multi?a+" ～ "+b+" 月度統計":a.replace("-"," 年 ")+" 月 月度統計")
       +(rt||rc?"（"+[rt&&"類型："+esc(typeInfo(rt).name),rc&&"分類："+esc(rc)].filter(Boolean).join("、")+"）":"");
   $("rpBody").innerHTML=`<h2>${title}</h2>
     <div class="rsum"><div><small>收入</small><b class="inc">${fmt(inc)}</b></div><div><small>支出</small><b class="exp">${fmt(exp)}</b></div>
     <div><small>結餘</small><b>${fmt(inc-exp)}</b></div><div><small>筆數</small><b>${rows.length}</b></div></div>
     ${perMonth}
-    <h3>支出占比</h3><table><tr><th>分類</th><th class="n">金額</th><th class="n">占比</th><th></th></tr>${share(ce,exp)}</table>${pieSvg(ce,exp)}
-    <h3>收入占比</h3><table><tr><th>分類</th><th class="n">金額</th><th class="n">占比</th><th></th></tr>${share(ci,inc)}</table>${pieSvg(ci,inc)}
+    ${typeBlock}
+    ${rc?"":`<h3>支出占比</h3><table><tr><th>分類</th><th class="n">金額</th><th class="n">占比</th><th></th></tr>${share(ce,exp)}</table>${pieSvg(ce,exp)}
+    <h3>收入占比</h3><table><tr><th>分類</th><th class="n">金額</th><th class="n">占比</th><th></th></tr>${share(ci,inc)}</table>${pieSvg(ci,inc)}`}
     ${perType}
     ${detail}`;
 }
 $("rpBtn").onclick=openReport;
 $("acBtn").onclick=openAcc;
-$("acType").onchange=renderReport;
+$("acType").onchange=()=>{fillRpFilters(true);renderReport()};
 $("rpType").onchange=()=>{fillRpFilters(true);renderReport()};
 $("rpCat").onchange=renderReport;
 $("rpFrom").onchange=$("rpTo").onchange=()=>{
