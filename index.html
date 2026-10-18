@@ -107,12 +107,16 @@ main .card{margin:5px 0}   /* flex 內外距不會合併，所以手機版各減
 #tyAdd,#caAdd{background:var(--main);color:#fff;border-color:var(--main)}
 /* 管理視窗：左邊類型清單、右邊該類型的分類清單；每列只放一個 ⋯，點開才出現編輯／刪除 */
 #mgDlg{width:min(94vw,680px)}
-.mghead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.mghead{display:flex;align-items:center;justify-content:space-between;gap:8px;position:sticky;top:-18px;z-index:2;margin:-18px -18px 8px;padding:12px 18px 8px;background:var(--card)}   /* 視窗內容太長要捲動時，標題與 ✕ 固定在上面 */
+.mghead span{display:flex;gap:6px}
 .mghead button{padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);font-size:13px}
+.mghead .x{font-size:16px;line-height:1;padding:6px 10px}
+dialog{overscroll-behavior:contain}              /* 視窗捲到底不會連動捲到後面的頁面 */
+body:has(dialog[open]){overflow:hidden}          /* 視窗開著時，後面的頁面不能捲動 */
 .mgcols{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
 @media (max-width:560px){.mgcols{grid-template-columns:1fr}}
 .mgcols h4{margin:0 0 4px;font-size:13px;color:var(--sub);font-weight:600}
-.mglist{list-style:none;margin:0 0 6px;padding:0;max-height:min(46vh,340px);overflow-y:auto}
+.mglist{list-style:none;margin:0 0 6px;padding:0;max-height:min(46vh,340px);overflow-y:auto;overscroll-behavior:contain}
 .mglist li{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:7px 8px;margin:4px 0;border:1px solid var(--line);border-radius:8px;background:var(--bg);cursor:pointer}
 .mglist li.sel{border-color:var(--main);outline:1px solid var(--main)}
 .mglist li.grp{border:0;background:none;outline:0;cursor:default;padding:2px 2px 0;margin:8px 0 0;font-size:12px;color:var(--sub)}
@@ -295,7 +299,7 @@ main .card{margin:5px 0}   /* flex 內外距不會合併，所以手機版各減
 </dialog>
 
 <dialog id="mgDlg">
-  <div class="mghead"><b>管理類型與分類</b><button type="button" id="mvOpen">批次搬移…</button></div>
+  <div class="mghead"><b>管理類型與分類</b><span><button type="button" id="mvOpen">批次搬移…</button><button type="button" class="x" id="mgX" aria-label="關閉">✕</button></span></div>
   <input id="mgSearch" type="search" placeholder="搜尋類型或分類">
   <div class="mgcols">
     <section>
@@ -321,7 +325,7 @@ main .card{margin:5px 0}   /* flex 內外距不會合併，所以手機版各減
 </dialog>
 
 <dialog id="mvDlg">
-  <b>批次搬移帳目</b>
+  <div class="mghead"><b>批次搬移帳目</b><button type="button" class="x" id="mvX" aria-label="關閉">✕</button></div>
   <p class="mgtip">把某類型／分類的帳目整批改成另一個。</p>
   <div class="mv">
     <select id="mvFromType"></select><select id="mvFromCat"></select>
@@ -988,11 +992,11 @@ $("catSel").onchange=()=>{cat=$("catSel").value};
 
 // 管理類型與分類視窗：左邊類型、右邊該類型的分類；⋯ 展開編輯／刪除；上方可搜尋；批次搬移在另一個視窗
 $("mgBtn").onclick=()=>{mgType=defType();mgOpen=null;$("mgSearch").value="";drawMg();$("mgDlg").showModal()};
-$("mgClose").onclick=()=>$("mgDlg").close();
+$("mgClose").onclick=$("mgX").onclick=()=>$("mgDlg").close();
 $("mgDlg").addEventListener("close",render);   // 關閉後更新篩選選單
 $("mgSearch").addEventListener("input",()=>{mgOpen=null;drawMg()});
 $("mvOpen").onclick=()=>{drawMv();$("mvDlg").showModal()};
-$("mvClose").onclick=()=>$("mvDlg").close();
+$("mvClose").onclick=$("mvX").onclick=()=>$("mvDlg").close();
 $("mgTypes").onclick=e=>{
   const b=e.target.closest("button");
   if(b){
